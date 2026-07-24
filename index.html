@@ -377,14 +377,14 @@
      To sync every team's data live across every device: create a free project at
      https://console.firebase.google.com, enable Firestore, and paste your web app's
      config values below. See the setup guide provided alongside this file. */
-  var FIREBASE_CONFIG = {
-    apiKey: "PASTE_YOUR_API_KEY",
-    authDomain: "PASTE_YOUR_PROJECT.firebaseapp.com",
-    projectId: "PASTE_YOUR_PROJECT_ID",
-    storageBucket: "PASTE_YOUR_PROJECT.appspot.com",
-    messagingSenderId: "PASTE_YOUR_SENDER_ID",
-    appId: "PASTE_YOUR_APP_ID"
-  };
+ const firebaseConfig = {
+  apiKey: "AIzaSy...",
+  authDomain: "cx02-control.firebaseapp.com",
+  projectId: "cx02-control",
+  storageBucket: "cx02-control.appspot.com",
+  messagingSenderId: "123456789",
+  appId: "1:123456789:web:abcdef123456"
+};
   var FIREBASE_READY = false;
   var db = null;
   (function initFirebase(){
