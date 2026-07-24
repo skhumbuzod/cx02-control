@@ -7,14 +7,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
-<!-- Optional: only used if const firebaseConfig = {
-  apiKey: "AIzaSy...",
-  authDomain: "cx02-control.firebaseapp.com",
-  projectId: "cx02-control",
-  storageBucket: "cx02-control.appspot.com",
-  messagingSenderId: "123456789",
-  appId: "1:123456789:web:abcdef123456"
-}; below is filled in. Safe to leave in even if unused. -->
+<!-- Optional: only used if FIREBASE_CONFIG below is filled in. Safe to leave in even if unused. -->
 <script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore-compat.js"></script>
 <style>
@@ -377,14 +370,14 @@
      To sync every team's data live across every device: create a free project at
      https://console.firebase.google.com, enable Firestore, and paste your web app's
      config values below. See the setup guide provided alongside this file. */
- const firebaseConfig = {
-  apiKey: "AIzaSy...",
-  authDomain: "cx02-control.firebaseapp.com",
-  projectId: "cx02-control",
-  storageBucket: "cx02-control.appspot.com",
-  messagingSenderId: "123456789",
-  appId: "1:123456789:web:abcdef123456"
-};
+  var FIREBASE_CONFIG = {
+    apiKey: "AIzaSyC1uLoQ0OqOoE_YG3dbv2TXk94KALG31bo",
+    authDomain: "cxo2-tracker.firebaseapp.com",
+    projectId: "cxo2-tracker",
+    storageBucket: "cxo2-tracker.firebasestorage.app",
+    messagingSenderId: "231830370656",
+    appId: "1:231830370656:web:848d478811ca317e928605"
+  };
   var FIREBASE_READY = false;
   var db = null;
   (function initFirebase(){
