@@ -1,0 +1,1213 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>CX02 Control — Crossover Challenge Rundown</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<!-- Optional: only used if FIREBASE_CONFIG below is filled in. Safe to leave in even if unused. -->
+<script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore-compat.js"></script>
+<style>
+  :root{
+    --canvas:#e9e6df;
+    --sidebar:#3f5560;
+    --sidebar-soft:#4c636e;
+    --panel:#ffffff;
+    --panel-2:#f6f4ef;
+    --ink:#2b3138;
+    --ink-soft:#6d7681;
+    --ink-dim:#9aa2ab;
+    --line:#ece8e1;
+    --line-2:#e2ddd4;
+
+    --teal:#3f7d86;
+    --teal-2:#5a9aa1;
+    --peach:#f4d9c6;
+    --peach-deep:#eabf9f;
+    --orange:#f08a3c;
+    --orange-soft:#f08a3c1a;
+
+    --team1:#3f7d86;
+    --team2:#c98a5e;
+    --team3:#8a7fb0;
+
+    --phase:#4f86c6;
+    --phase-soft:#4f86c61f;
+    --custom:#9a8bd0;
+    --custom-soft:#9a8bd01f;
+    --absent:#e07a5f;
+    --absent-soft:#e07a5f1f;
+    --med:#e0a03c;
+    --med-soft:#e0a03c1f;
+    --done:#4fa383;
+    --done-soft:#4fa3831f;
+    --review:#4f86c6;
+    --review-soft:#4f86c61f;
+    --idle-soft:#9aa2ab24;
+
+    --r-lg:22px;
+    --r-md:16px;
+    --r-sm:11px;
+    --font:'Poppins', sans-serif;
+    --font-body:'Inter', sans-serif;
+    --shadow:0 18px 40px -22px rgba(43,49,56,0.35);
+    --shadow-sm:0 8px 20px -14px rgba(43,49,56,0.4);
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:var(--canvas);
+    color:var(--ink);
+    font-family:var(--font-body);
+    min-height:100vh;
+    -webkit-font-smoothing:antialiased;
+  }
+  button{font-family:inherit;cursor:pointer;}
+  h1,h2,h3,.f-display{font-family:var(--font);}
+  ::selection{background:var(--peach);}
+  :focus-visible{outline:2px solid var(--orange);outline-offset:2px;}
+  .eyebrow{font-size:10px;font-weight:700;letter-spacing:1.8px;text-transform:uppercase;color:var(--ink-dim);}
+
+  .app{display:flex;min-height:100vh;padding:14px;gap:0;}
+
+  .panel{flex:1;background:var(--panel);border-radius:var(--r-lg);box-shadow:var(--shadow);
+    padding:26px 30px 34px;min-width:0;display:flex;flex-direction:column;gap:20px;}
+
+  .topline{display:flex;align-items:center;justify-content:space-between;gap:20px;flex-wrap:wrap;margin:-4px 0 2px;}
+  .topnav{display:flex;align-items:center;gap:22px;}
+  .topnav a{font-family:var(--font);font-size:12px;font-weight:600;letter-spacing:1.2px;text-transform:uppercase;color:var(--ink-dim);text-decoration:none;padding-bottom:3px;border-bottom:2px solid transparent;}
+  .topnav a.on{color:var(--ink);border-bottom-color:var(--orange);}
+  .members{display:flex;align-items:center;gap:10px;}
+  .members span{font-size:12px;color:var(--ink-soft);font-weight:500;}
+
+  .hero-row{display:grid;grid-template-columns:1.55fr 1fr;gap:18px;}
+  @media (max-width:900px){.hero-row{grid-template-columns:1fr;}}
+
+  .hero{position:relative;overflow:hidden;border-radius:var(--r-lg);padding:26px 28px;color:#fff;
+    background:linear-gradient(115deg,var(--teal) 0%,var(--teal-2) 42%,var(--peach-deep) 100%);
+    min-height:210px;display:flex;flex-direction:column;}
+  .hero .eyebrow{color:#eaf3f2;opacity:.85;}
+  .hero-label{font-size:13px;font-weight:500;opacity:.92;margin:0 0 2px;}
+  .hero-big{font-family:var(--font);font-size:54px;font-weight:700;line-height:1;margin:2px 0 16px;letter-spacing:-1px;}
+  .hero-metrics{display:flex;gap:26px;}
+  .hero-metric{display:flex;align-items:center;gap:10px;}
+  .hero-metric .mi{width:34px;height:34px;border-radius:10px;background:rgba(255,255,255,.18);display:flex;align-items:center;justify-content:center;font-size:15px;}
+  .hero-metric small{display:block;font-size:10.5px;opacity:.8;margin-bottom:1px;}
+  .hero-metric b{font-family:var(--font);font-size:16px;font-weight:600;}
+  .hero-cta{position:absolute;right:0;bottom:0;background:var(--teal);color:#fff;border:none;font-family:var(--font);
+    font-size:11.5px;font-weight:600;letter-spacing:1px;text-transform:uppercase;padding:15px 24px;border-radius:var(--r-md) 0 var(--r-lg) 0;
+    display:flex;align-items:center;gap:8px;box-shadow:-6px -6px 18px -12px rgba(0,0,0,.4);}
+  .hero-cta:hover{background:#356a72;}
+
+  .rate-card{background:var(--peach);border-radius:var(--r-lg);padding:22px 24px;color:#5a4636;display:flex;flex-direction:column;min-height:210px;}
+  .rate-card .eyebrow{color:#a9836a;}
+  .rate-head{display:flex;align-items:flex-start;justify-content:space-between;gap:10px;}
+  .rate-num-wrap{display:flex;align-items:flex-start;gap:6px;}
+  .rate-num{font-family:var(--font);font-size:50px;font-weight:700;line-height:1;color:#3f3227;}
+  .rate-delta{background:#fff;color:var(--done);font-size:11px;font-weight:700;border-radius:8px;padding:3px 7px;margin-top:6px;white-space:nowrap;}
+  .rate-delta.behind{color:var(--absent);}
+  .rate-delta.ahead{color:var(--done);}
+  .rate-delta.onpace{color:#6f5a49;}
+  .gauge{width:88px;height:56px;position:relative;flex:none;}
+  .rate-note{font-size:12px;line-height:1.5;color:#6f5a49;margin:14px 0 0;}
+  .rate-note b{color:#3f3227;}
+  .rate-foot{margin-top:auto;background:#fff;border-radius:var(--r-md);padding:11px 12px;display:flex;align-items:center;gap:12px;}
+  .rate-foot p{margin:0;font-size:11px;line-height:1.4;color:var(--ink-soft);flex:1;}
+  .rate-foot .go{width:34px;height:34px;border-radius:50%;background:var(--orange);color:#fff;border:none;font-size:14px;flex:none;display:flex;align-items:center;justify-content:center;}
+  .rate-foot .go:hover{background:#dd7a2e;}
+
+  .section-title{font-family:var(--font);font-size:15px;font-weight:600;color:var(--ink);margin:6px 0 0;}
+  .lock-hint{display:inline-flex;align-items:center;gap:6px;font-size:11px;color:var(--ink-dim);font-weight:500;margin-left:8px;}
+
+  .controls{display:flex;align-items:center;gap:12px;flex-wrap:wrap;}
+  .role-seg{display:flex;background:var(--panel-2);border:1px solid var(--line-2);border-radius:999px;padding:3px;}
+  .role-seg button{border:none;background:transparent;color:var(--ink-soft);font-family:var(--font);font-size:12px;font-weight:600;padding:7px 16px;border-radius:999px;transition:.15s;}
+  .role-seg button.active{background:var(--teal);color:#fff;}
+  .ctx-chips{display:flex;gap:6px;align-items:center;flex-wrap:wrap;}
+  .chip{border:1px solid var(--line-2);background:#fff;color:var(--ink-soft);font-size:11.5px;font-weight:600;padding:6px 12px;border-radius:999px;}
+  .chip.active{border-color:var(--teal);color:var(--teal);background:#eef5f5;}
+  select.pill-select{border:1px solid var(--line-2);background:#fff;color:var(--ink);font-size:12px;font-family:inherit;padding:7px 12px;border-radius:999px;}
+  .search{background:var(--panel-2);border:1px solid var(--line-2);color:var(--ink);padding:8px 14px;border-radius:999px;font-size:12.5px;font-family:inherit;min-width:190px;flex:1;max-width:260px;}
+  .search::placeholder{color:var(--ink-dim);}
+  .phase-seg{display:flex;gap:6px;overflow-x:auto;max-width:100%;}
+  .phase-seg button{border:1px solid var(--line-2);background:#fff;color:var(--ink-soft);font-size:11.5px;font-weight:600;padding:7px 12px;border-radius:999px;white-space:nowrap;flex:none;}
+  .phase-seg button.active{border-color:var(--phase);color:var(--phase);background:var(--phase-soft);}
+  .ghost{border:1px solid var(--line-2);background:transparent;color:var(--ink-dim);font-size:11.5px;padding:7px 12px;border-radius:999px;font-weight:600;}
+  .ghost:hover{color:var(--ink-soft);border-color:var(--line-2);}
+
+  .gates{display:flex;gap:10px;overflow-x:auto;padding:2px;}
+  .gate{flex:1;min-width:128px;background:var(--panel-2);border:1px solid var(--line);border-radius:var(--r-md);padding:13px 14px;position:relative;}
+  .gate .gname{font-size:11.5px;font-weight:600;font-family:var(--font);margin:0 0 3px;color:var(--ink);}
+  .gate .gcount{font-size:10.5px;color:var(--ink-soft);margin:0;font-weight:500;}
+  .gate .gbar{height:5px;border-radius:3px;background:#e5e0d8;margin-top:9px;overflow:hidden;}
+  .gate .gbar i{display:block;height:100%;border-radius:3px;background:var(--ink-dim);}
+  .gate.done .gbar i{background:var(--done);}
+  .gate.active .gbar i{background:var(--orange);}
+  .gate.done .gcount{color:var(--done);}
+  .gate.active .gcount{color:var(--orange);}
+
+  .board{display:flex;gap:16px;align-items:flex-start;flex-wrap:wrap;}
+  .lane{flex:1 1 320px;min-width:290px;background:var(--panel-2);border:1px solid var(--line);border-radius:var(--r-lg);display:flex;flex-direction:column;overflow:hidden;}
+  .lane.solo{flex-basis:100%;}
+  .lane-head{padding:16px 18px 14px;border-bottom:1px solid var(--line);display:flex;flex-direction:column;gap:10px;}
+  .lane-head-top{display:flex;align-items:center;justify-content:space-between;gap:8px;}
+  .lane-title-row{display:flex;align-items:center;gap:9px;min-width:0;}
+  .lane-dot{width:10px;height:10px;border-radius:50%;flex:none;}
+  .lane-title{font-family:var(--font);font-size:15px;font-weight:600;background:transparent;border:none;color:var(--ink);padding:2px 5px;border-radius:6px;min-width:0;max-width:150px;}
+  .lane-title:disabled{color:var(--ink);}
+  .lane-title:not(:disabled):hover,.lane-title:not(:disabled):focus{background:#fff;outline:1px solid var(--line-2);}
+  .lane-edit,.pin-btn{border:none;background:none;color:var(--ink-dim);font-size:12px;padding:3px;flex:none;}
+  .lane-edit:hover,.pin-btn:hover{color:var(--orange);}
+  .pin-btn.set{color:var(--teal);}
+  .lane-pct{font-family:var(--font);font-size:13px;font-weight:600;color:var(--ink-soft);flex:none;}
+  .lane-bar{height:6px;border-radius:4px;background:#e5e0d8;overflow:hidden;}
+  .lane-bar i{display:block;height:100%;border-radius:4px;transition:width .3s ease;}
+  .lane-body{padding:12px;display:flex;flex-direction:column;gap:10px;}
+  .empty{color:var(--ink-dim);font-size:12.5px;text-align:center;padding:22px 10px;font-weight:500;}
+
+  /* roster */
+  .roster-toggle{border:none;background:none;color:var(--ink-soft);font-size:11.5px;font-weight:700;padding:0;display:flex;align-items:center;gap:5px;font-family:var(--font);text-transform:uppercase;letter-spacing:.5px;}
+  .roster-toggle:hover{color:var(--ink);}
+  .roster{display:flex;flex-direction:column;gap:6px;}
+  .roster-row{display:flex;align-items:center;gap:8px;}
+  .roster-role{flex:0 0 118px;font-size:11px;font-weight:600;color:var(--ink-soft);border-bottom:1px dotted var(--ink-dim);cursor:help;line-height:1.3;}
+  .roster-input{flex:1;border:1px solid var(--line-2);background:#fff;color:var(--ink);font-size:11.5px;padding:6px 8px;border-radius:7px;font-family:inherit;min-width:0;}
+  .roster-input:disabled{background:var(--panel-2);color:var(--ink-dim);}
+
+  .card{background:#fff;border:1px solid var(--line);border-radius:var(--r-md);padding:13px 14px;box-shadow:var(--shadow-sm);}
+  .card-top{display:flex;align-items:flex-start;justify-content:space-between;gap:8px;}
+  .card-title{font-family:var(--font);font-size:13.5px;font-weight:600;margin:0 0 3px;line-height:1.3;color:var(--ink);}
+  .card-dates{font-size:11px;color:var(--ink-dim);margin:0;font-weight:700;}
+  .card-actions{display:flex;gap:4px;flex:none;}
+  .icon-btn{border:none;background:none;color:var(--ink-dim);font-size:13px;padding:2px 4px;line-height:1;}
+  .icon-btn:hover{color:#e07a5f;}
+  .card-mid{display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-top:11px;}
+  .pill{font-size:9.5px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;padding:4px 9px;border-radius:999px;}
+  .pill-phase{background:var(--phase-soft);color:var(--phase);}
+  .pill-custom{background:var(--custom-soft);color:var(--custom);}
+  .status-chip{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;padding:5px 11px;border-radius:999px;border:1px solid transparent;font-family:var(--font-body);}
+  .status-not-started{background:var(--idle-soft);color:var(--ink-soft);}
+  .status-in-progress{background:var(--med-soft);color:var(--med);}
+  .status-in-review{background:var(--review-soft);color:var(--review);}
+  .status-done{background:var(--done-soft);color:var(--done);}
+  .status-chip:not(:disabled):hover{border-color:currentColor;}
+  .cl-toggle{border:none;background:none;color:var(--ink-dim);font-size:11px;padding:0;margin-top:10px;display:flex;align-items:center;gap:5px;font-weight:600;}
+  .cl-toggle:hover{color:var(--ink-soft);}
+  .checklist{margin:9px 0 0;padding:9px 0 0;border-top:1px dashed var(--line-2);display:flex;flex-direction:column;gap:7px;}
+  .check-row{display:flex;align-items:center;gap:9px;font-size:12px;}
+  .check-row input{accent-color:var(--teal);width:15px;height:15px;flex:none;}
+  .check-row span{color:var(--ink-soft);}
+  .check-row.done span{color:var(--ink-dim);text-decoration:line-through;}
+  .attribution{font-size:10px;color:var(--ink-dim);margin-top:9px;font-weight:500;}
+
+  .add-form{padding:12px;border-top:1px dashed var(--line-2);display:flex;flex-direction:column;gap:7px;}
+  .add-form input,.add-form select{background:#fff;border:1px solid var(--line-2);color:var(--ink);font-size:12px;padding:8px 10px;border-radius:9px;font-family:inherit;}
+  .add-form .row{display:flex;gap:7px;}
+  .add-form .row>*{flex:1;}
+  .add-form button{background:var(--orange);color:#fff;border:none;font-weight:600;font-size:12px;padding:9px;border-radius:9px;font-family:var(--font);}
+  .add-form button:hover{background:#dd7a2e;}
+  .lane-add{margin:2px 12px 14px;border:1px dashed var(--line-2);background:none;color:var(--ink-dim);font-size:12px;padding:10px;border-radius:11px;font-weight:600;}
+  .lane-add:hover{color:var(--ink-soft);border-color:var(--ink-dim);}
+
+  .bottom-row{display:grid;grid-template-columns:1.4fr 1fr;gap:18px;}
+  @media (max-width:900px){.bottom-row{grid-template-columns:1fr;}}
+  .soft-card{background:var(--panel-2);border:1px solid var(--line);border-radius:var(--r-lg);padding:18px 20px;}
+  .soft-card h2{font-family:var(--font);font-size:14px;font-weight:600;margin:0 0 14px;color:var(--ink);}
+  .activity-item{font-size:12px;color:var(--ink-soft);padding:8px 0;border-top:1px solid var(--line);display:flex;align-items:baseline;gap:8px;}
+  .activity-item:first-of-type{border-top:none;}
+  .activity-item .who{width:26px;height:26px;border-radius:50%;background:var(--teal);color:#fff;flex:none;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;font-family:var(--font);}
+  .activity-item .txt{flex:1;line-height:1.4;}
+  .activity-item .txt b{color:var(--ink);font-weight:600;}
+  .activity-item .t{font-size:10.5px;color:var(--ink-dim);flex:none;}
+  .activity-empty{font-size:12px;color:var(--ink-dim);}
+
+  .perf-item{display:flex;align-items:center;gap:12px;padding:9px 0;border-top:1px solid var(--line);}
+  .perf-item:first-of-type{border-top:none;}
+  .perf-av{width:38px;height:38px;border-radius:50%;flex:none;display:flex;align-items:center;justify-content:center;color:#fff;font-family:var(--font);font-weight:600;font-size:13px;}
+  .perf-name{font-family:var(--font);font-size:13px;font-weight:600;color:var(--ink);margin:0;}
+  .perf-sub{font-size:11px;color:var(--ink-dim);margin:1px 0 0;}
+  .perf-score{margin-left:auto;background:var(--peach);color:#7a5c44;font-family:var(--font);font-weight:600;font-size:13px;border-radius:9px;padding:5px 11px;}
+
+  .foot{text-align:center;color:var(--ink-dim);font-size:11px;padding-top:4px;}
+
+  /* lock screen */
+  .lock-screen{background:#fff;border:1px solid var(--line);border-radius:var(--r-lg);padding:36px 28px;text-align:center;display:flex;flex-direction:column;align-items:center;gap:10px;flex:1 1 100%;}
+  .lock-screen .lk{width:46px;height:46px;border-radius:50%;background:var(--panel-2);display:flex;align-items:center;justify-content:center;font-size:20px;margin-bottom:4px;}
+  .lock-screen h3{margin:0;font-family:var(--font);font-size:16px;}
+  .lock-screen p{margin:0;color:var(--ink-soft);font-size:12.5px;max-width:320px;}
+  .lock-form{display:flex;gap:8px;margin-top:10px;}
+  .lock-form input{border:1px solid var(--line-2);background:var(--panel-2);padding:9px 14px;border-radius:9px;font-size:14px;letter-spacing:3px;text-align:center;width:120px;font-family:var(--font-body);}
+  .lock-form button{background:var(--teal);color:#fff;border:none;padding:9px 16px;border-radius:9px;font-weight:600;font-size:12.5px;font-family:var(--font);}
+  .lock-error{color:#e07a5f;font-size:11.5px;font-weight:600;min-height:14px;}
+
+  /* attendance register */
+  .attendance-panel{background:var(--panel-2);border:1px solid var(--line);border-radius:var(--r-lg);padding:16px 18px;overflow-x:auto;}
+  .att-table{width:100%;border-collapse:collapse;font-size:12px;}
+  .att-table th,.att-table td{padding:8px 10px;border-bottom:1px solid var(--line);white-space:nowrap;text-align:left;}
+  .att-table th{font-family:var(--font);font-weight:600;color:var(--ink-soft);font-size:10.5px;text-transform:uppercase;letter-spacing:.4px;}
+  .att-session{display:block;font-weight:600;color:var(--ink);}
+  .att-date{display:block;font-size:10.5px;color:var(--ink-dim);font-weight:700;}
+  .att-cell{text-align:center!important;}
+  .att-btn{border:1px solid var(--line-2);background:#fff;color:var(--ink-dim);font-size:10.5px;font-weight:700;width:34px;height:26px;border-radius:7px;}
+  .att-btn.present{background:var(--done-soft);color:var(--done);border-color:transparent;}
+  .att-btn.late{background:var(--med-soft);color:var(--med);border-color:transparent;}
+  .att-btn.absent{background:var(--absent-soft);color:var(--absent);border-color:transparent;}
+  .att-summary td{font-weight:700;color:var(--ink-soft);border-top:2px solid var(--line);border-bottom:none;}
+
+  @media (prefers-reduced-motion: reduce){ * { transition:none!important; } }
+  @media (max-width:640px){
+    .app{padding:0;}
+    .panel{border-radius:0;padding:18px;}
+  }
+</style>
+</head>
+<body>
+<div class="app">
+  <main class="panel">
+
+    <div class="topline">
+      <div class="topnav">
+        <a href="#" class="on" data-view="board">Dashboard</a>
+        <a href="#" data-view="attendance">Attendance</a>
+      </div>
+      <div class="members"><span>18 members · 3 teams</span></div>
+    </div>
+
+    <div class="controls" style="justify-content:space-between">
+      <div class="controls" style="gap:12px">
+        <div class="role-seg" id="roleSeg">
+          <button data-role="admin">Admin</button>
+          <button data-role="team">Team</button>
+        </div>
+        <div class="ctx-chips" id="ctxChips"></div>
+      </div>
+      <button class="ghost" id="resetBtn">Reset data</button>
+    </div>
+
+    <div id="dashboardView">
+      <section class="hero-row">
+        <div class="hero">
+          <span class="eyebrow">Crossover challenge progress</span>
+          <p class="hero-label">Milestones cleared</p>
+          <div class="hero-big" id="heroBig">0/0</div>
+          <div class="hero-metrics">
+            <div class="hero-metric"><span class="mi">✓</span><div><small>Gates cleared</small><b id="heroGates">0/6</b></div></div>
+            <div class="hero-metric"><span class="mi">◷</span><div><small>Active now</small><b id="heroActive">0</b></div></div>
+          </div>
+          <button class="hero-cta" id="heroCta">View full timeline ›</button>
+        </div>
+
+        <div class="rate-card">
+          <span class="eyebrow">Pace vs. schedule</span>
+          <div class="rate-head">
+            <div class="rate-num-wrap">
+              <span class="rate-num" id="rateNum">0</span>
+              <span class="rate-delta" id="rateDelta">On pace</span>
+            </div>
+            <div class="gauge">
+              <svg viewBox="0 0 88 56" width="88" height="56">
+                <path d="M8 52 A36 36 0 0 1 80 52" fill="none" stroke="#ffffff" stroke-width="7" stroke-linecap="round" opacity="0.55"/>
+                <path id="gaugeArc" d="M8 52 A36 36 0 0 1 80 52" fill="none" stroke="#f08a3c" stroke-width="7" stroke-linecap="round"/>
+                <g id="gaugeExpectedTick"><line x1="44" y1="15" x2="44" y2="26" stroke="#3f3227" stroke-width="3" stroke-linecap="round" opacity="0.5"/></g>
+                <g id="gaugeNeedle"><line x1="44" y1="52" x2="44" y2="24" stroke="#3f3227" stroke-width="2.5" stroke-linecap="round"/><circle cx="44" cy="52" r="4" fill="#3f3227"/></g>
+              </svg>
+            </div>
+          </div>
+          <p class="rate-note" id="rateNote">Loading pace…</p>
+          <div class="rate-foot">
+            <p id="nextDeadlineNote">Next deadline loading…</p>
+            <button class="go" id="rateGo" title="Jump to next milestone">▸</button>
+          </div>
+        </div>
+      </section>
+
+      <div class="controls"><input type="search" class="search" id="searchInput" placeholder="Search milestones…"></div>
+
+      <div class="phase-seg" id="phaseSeg"></div>
+
+      <div><h3 class="section-title" id="boardHeading">Milestone board</h3></div>
+
+      <section class="gates" id="gateStrip"></section>
+
+      <section class="board" id="board"></section>
+
+      <section class="bottom-row">
+        <div class="soft-card">
+          <h2 id="activityHeading">Recent activity</h2>
+          <div id="activityList"></div>
+        </div>
+        <div class="soft-card">
+          <h2 id="perfHeading">Top performers</h2>
+          <div id="performers"></div>
+        </div>
+      </section>
+    </div>
+
+    <div id="attendanceView" style="display:none">
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap">
+        <h3 class="section-title" id="attendanceHeading">Attendance register</h3>
+        <select class="pill-select" id="attTeamSelect" style="display:none"></select>
+      </div>
+      <div id="attendancePanel" style="margin-top:14px"></div>
+    </div>
+
+    <p class="foot" id="syncFoot">CX02 Control · set a per-team PIN to keep boards private on shared devices</p>
+  </main>
+</div>
+
+<script>
+(function(){
+  "use strict";
+
+  var STORAGE_KEY = "cx02ControlState.v1";
+  function D(y,m,d){ return new Date(y, m-1, d).getTime(); } // m is 1-based month
+
+  /* ---------------- Optional real-time sync (Firebase) ----------------
+     Leave FIREBASE_CONFIG untouched to run in local-only mode (each browser keeps its own copy).
+     To sync every team's data live across every device: create a free project at
+     https://console.firebase.google.com, enable Firestore, and paste your web app's
+     config values below. See the setup guide provided alongside this file. */
+  var FIREBASE_CONFIG = {
+    apiKey: "PASTE_YOUR_API_KEY",
+    authDomain: "PASTE_YOUR_PROJECT.firebaseapp.com",
+    projectId: "PASTE_YOUR_PROJECT_ID",
+    storageBucket: "PASTE_YOUR_PROJECT.appspot.com",
+    messagingSenderId: "PASTE_YOUR_SENDER_ID",
+    appId: "PASTE_YOUR_APP_ID"
+  };
+  var FIREBASE_READY = false;
+  var db = null;
+  (function initFirebase(){
+    if (FIREBASE_CONFIG.apiKey.indexOf("PASTE_") === 0) return; // not configured — stay local-only
+    if (typeof firebase === "undefined") return; // SDK failed to load (e.g. offline)
+    try{
+      firebase.initializeApp(FIREBASE_CONFIG);
+      db = firebase.firestore();
+      FIREBASE_READY = true;
+    }catch(e){ console.warn("Firebase init failed, falling back to local-only mode.", e); }
+  })();
+
+  /* ---------------- Shared course calendar (from CX02 brief) ---------------- */
+  var PHASES = [
+    { id:"p1", name:"Research & Brief" },
+    { id:"p2", name:"Strategy" },
+    { id:"p3", name:"Concept" },
+    { id:"p4", name:"Craft & Touchpoints" },
+    { id:"p5", name:"Campus Week" },
+    { id:"p6", name:"Final Hand-in" }
+  ];
+
+  // NOTE: sessions run Tue/Thu/Sat with no gaps, starting from the Tue 21 Jul kickoff, right up until
+  // Campus Immersion. Confirmed against reality: Client Brief landed Thu 23 Jul (the day before Fri 24 Jul).
+  // Campus Immersion is defaulted to the next open slot, Tue 18 Aug — flag if the real start date differs.
+  var MILESTONES = [
+    { id:"m1", title:"Brand & Category Research", phase:"p1", start:D(2026,7,7), end:D(2026,7,20), time:null,
+      checklist:["Category & competitor scan complete","Brand audit documented","Key findings logged for the team"] },
+    { id:"m2", title:"Project Brief & UCD Kickoff", phase:"p1", start:D(2026,7,21), end:D(2026,7,21), time:null,
+      checklist:["Project brief received","UCD teammates onboarded","All 6 roles confirmed"] },
+    { id:"m3", title:"Client Brief", phase:"p1", start:D(2026,7,23), end:D(2026,7,23), time:null,
+      checklist:["Attend client brief session","Log key requirements","Confirm budget & timing","Identify internal leads"] },
+    { id:"m4", title:"Insight Reverts", phase:"p2", start:D(2026,7,25), end:D(2026,7,25), time:null,
+      checklist:["Interpretation of the brief","Findings to date","Research objectives & plan","Questions ready for Client Revert"] },
+    { id:"m5", title:"Client Reverts", phase:"p2", start:D(2026,7,28), end:D(2026,7,28), time:null,
+      checklist:["Align on brief interpretation","Confirm scope changes","Sign-off from client contact"] },
+    { id:"m6", title:"Strategy Review", phase:"p2", start:D(2026,7,30), end:D(2026,7,30), time:"+ optional session Sat 1 Aug",
+      checklist:["Overview of macro factors","Summary of target marketing","Insights presented","Strategic solution outlined","Get-To-By defined"] },
+    { id:"m7", title:"Creative Brief", phase:"p2", start:D(2026,8,4), end:D(2026,8,4), time:null,
+      checklist:["One-pager Creative Brief drafted","Presents marketing strategy in an inspiring, creative way"] },
+    { id:"m8", title:"Concept Review 1", phase:"p3", start:D(2026,8,6), end:D(2026,8,6), time:null,
+      checklist:["G-T-B presented (WHAT)","5 big ideas/concepts presented (HOW)","Each idea has a one-line working campaign name","Each idea scamped: print ad/poster + 1 other touchpoint","Each scamp has a headline/tagline","Copy deck with 5+ headline/tagline options"] },
+    { id:"m9", title:"Concept Review 2", phase:"p3", start:D(2026,8,8), end:D(2026,8,8), time:null,
+      checklist:["Two strongest ideas selected","3 executions scamped per idea","Headline on every scamp","Copy deck with more options per execution","Stylistic moodboard per idea"] },
+    { id:"m10", title:"Touchpoint Review", phase:"p4", start:D(2026,8,11), end:D(2026,8,11), time:null,
+      checklist:["Success definition for the brand articulated","Desired consumer action defined","Consumer journey phases mapped","Touchpoint mix justified strategically","Roll-out & phasing considered","Measurement approach & currencies defined","Budget & ROI considered"] },
+    { id:"m11", title:"Craft Review 1", phase:"p4", start:D(2026,8,13), end:D(2026,8,13), time:null,
+      checklist:["Media plan presented","3 digitally executed touchpoints with final copy"] },
+    { id:"m12", title:"Craft Review 2", phase:"p4", start:D(2026,8,15), end:D(2026,8,15), time:null,
+      checklist:["At least 50% of media touchpoints digitally executed","Executions presented in situ"] },
+    { id:"m13", title:"Campus Immersion", phase:"p5", start:D(2026,8,18), end:D(2026,8,21), time:"09h00 start – 14h00 end",
+      checklist:["On-campus check-in complete","Immersion schedule reviewed","Team materials packed for campus"] },
+    { id:"m14", title:"Internal Presentations", phase:"p5", start:D(2026,8,19), end:D(2026,8,19), time:null,
+      checklist:["15-min dress-rehearsal presentation ready","Presented as if to the client","Account Manager logging lecturer feedback"] },
+    { id:"m15", title:"Hand-ins (logistics)", phase:"p5", start:D(2026,8,20), end:D(2026,8,20), time:null,
+      checklist:["All job bags up to date","Final presentation ready","Tech checks done in Main Auditorium","Presentation uploaded to Moodle","Final check-in with lecturers"] },
+    { id:"m16", title:"Client Presentations", phase:"p5", start:D(2026,8,21), end:D(2026,8,21), time:"Tech check 8:30 · Client 9:30 · Present 10:00",
+      checklist:["Tech checks done 8:30–9:30am","Ready to greet client at 9:30am","15-min presentation + 15-min client feedback delivered","Celebrate on Red & Yellow rooftop"] },
+    { id:"m17", title:"Hand-in Document", phase:"p6", start:D(2026,8,25), end:D(2026,8,25), time:null,
+      checklist:["All assets compiled into final document","Document proofed","Final file submitted","Client confirmation received"] }
+  ];
+
+  var ROLES = [
+    { key:"am", label:"Account Manager", desc:"Liaison between agency and client. Runs sales/marketing plans, project management and relationship service." },
+    { key:"ap", label:"Account Planner", desc:"Specialises in consumer thought & behaviour. Drives the overall strategic direction of the creative campaign." },
+    { key:"cp", label:"Channel Planner", desc:"Builds and implements the cross-channel marketing strategy that boosts brand awareness and drives sales." },
+    { key:"rl", label:"Research Lead", desc:"Ensures high-quality insight delivery. Oversees planning, fieldwork and analysis that shapes design decisions." },
+    { key:"st", label:"Strategist", desc:"Turns research into a long-term vision. Blends UX with business goals and tracks/measures results." },
+    { key:"ux", label:"UX Researcher", desc:"Runs usability tests and investigates user needs, behaviours and pain points across all research stages." }
+  ];
+
+  // Pre-filled from the CX02 Teams slide's 3 columns of 6 names — assumed to map column -> team
+  // (the slide's highlight colors didn't line up cleanly with the columns, so this is the best-founded guess).
+  // Easy to fix: just edit any name directly in the Team roster panel.
+  var TEAM_ROSTER_NAMES = {
+    team1: ["Maxine Lennets","Emma Cutts","Rofhiwa Kutama","Nicole Pilley","Thabani Mazibuko","Namrata Zala"],
+    team2: ["Tshiamo Ntaleng","Robyn Schoeman","Jana Kotze","Gillian Abboy","Henno Reyneke","Heather Seymour"],
+    team3: ["Sandiswa Pholo","Sarah Camitta","Andre Onanga","Paul-Rick Groves","Mduduzi Dube","Sinethemba Gumede"]
+  };
+
+  var PROJECT_START = Math.min.apply(null, MILESTONES.map(function(m){ return m.start; }));
+  var PROJECT_END = Math.max.apply(null, MILESTONES.map(function(m){ return m.end; }));
+
+  var TEAM_COLORS = { team1:"var(--team1)", team2:"var(--team2)", team3:"var(--team3)" };
+  var TEAM_HEX = { team1:"#3f7d86", team2:"#c98a5e", team3:"#8a7fb0" };
+  var TEAM_ORDER = ["team1","team2","team3"];
+  var STATUS_ORDER = ["not-started","in-progress","in-review","done"];
+  var STATUS_LABEL = { "not-started":"Not started","in-progress":"In progress","in-review":"In review","done":"Done" };
+  var ATT_ORDER = ["", "present", "late", "absent"];
+  var ATT_LABEL = { "":"—", "present":"Present", "late":"Late", "absent":"Absent" };
+  function nextAttStatus(s){ var i=ATT_ORDER.indexOf(s); return ATT_ORDER[(i+1)%ATT_ORDER.length]; }
+
+  /* ---------------- State ---------------- */
+
+  function defaultTeamState(teamKey){
+    var now = Date.now();
+    var status = {}, checklist = {};
+    MILESTONES.forEach(function(m){
+      var s = "not-started";
+      if (now > m.end) s = "in-progress"; // started calendar-wise, but never auto-"done" — teams must clear it themselves
+      else if (now >= m.start) s = "in-progress";
+      status[m.id] = s;
+      checklist[m.id] = m.checklist.map(function(){ return false; });
+    });
+    var attendance = {};
+    MILESTONES.forEach(function(m){ attendance[m.id] = ["","","","","",""]; });
+    var names = TEAM_ROSTER_NAMES[teamKey] || [];
+    return {
+      name:null, // set below per team
+      pin:"",
+      roster: ROLES.map(function(r,i){ return { role:r.label, name: names[i]||"" }; }),
+      status: status,
+      checklist: checklist,
+      custom: [],
+      attendance: attendance
+    };
+  }
+
+  function buildDefaultState(){
+    var teams = {};
+    TEAM_ORDER.forEach(function(tk,i){
+      var t = defaultTeamState(tk);
+      t.name = "Team " + (i+1);
+      teams[tk] = t;
+    });
+    return {
+      role:"admin",
+      activeAdmin:"Admin 1",
+      activeTeam:"team1",
+      teams: teams,
+      activity:[{ ts:Date.now(), who:"System", team:null, text:"Rundown initialized" }]
+    };
+  }
+
+  // Ensures a team object has every field the current app version expects —
+  // used both when loading from localStorage and when a document arrives from Firestore,
+  // so adding new milestones/fields later never breaks existing saved data.
+  function normalizeTeam(t){
+    if (!t.roster) t.roster = ROLES.map(function(r){ return { role:r.label, name:"" }; });
+    if (!t.status) t.status = {};
+    if (!t.checklist) t.checklist = {};
+    if (!t.custom) t.custom = [];
+    if (typeof t.pin !== "string") t.pin = "";
+    if (!t.attendance) t.attendance = {};
+    MILESTONES.forEach(function(m){
+      if (!t.status[m.id]) t.status[m.id] = "not-started";
+      if (!t.checklist[m.id]) t.checklist[m.id] = m.checklist.map(function(){ return false; });
+      if (!t.attendance[m.id]) t.attendance[m.id] = ["","","","","",""];
+    });
+    return t;
+  }
+
+  function loadState(){
+    try{
+      var raw = localStorage.getItem(STORAGE_KEY);
+      if (!raw) return buildDefaultState();
+      var p = JSON.parse(raw);
+      if (!p || !p.teams) return buildDefaultState();
+      TEAM_ORDER.forEach(function(tk){
+        if (!p.teams[tk]) p.teams[tk] = defaultTeamState(tk);
+        normalizeTeam(p.teams[tk]);
+      });
+      if (!p.activity) p.activity = [];
+      return p;
+    }catch(e){ return buildDefaultState(); }
+  }
+  function saveState(){
+    try{ localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); }catch(e){}
+    if (FIREBASE_READY) pushTeamsToFirestore();
+  }
+  function pushTeamsToFirestore(){
+    TEAM_ORDER.forEach(function(tk){
+      db.collection("teams").doc(tk).set(state.teams[tk]).catch(function(e){ console.warn("Firestore save failed for "+tk, e); });
+    });
+  }
+  function subscribeFirestore(){
+    if (!FIREBASE_READY) return;
+    TEAM_ORDER.forEach(function(tk){
+      db.collection("teams").doc(tk).onSnapshot(function(docSnap){
+        if (docSnap.exists){
+          state.teams[tk] = normalizeTeam(docSnap.data());
+        } else {
+          // first device to connect seeds Firestore with the local default for this team
+          db.collection("teams").doc(tk).set(state.teams[tk]).catch(function(e){ console.warn(e); });
+        }
+        render();
+      }, function(err){ console.warn("Team listener error", tk, err); });
+    });
+    db.collection("activity").orderBy("ts","desc").limit(30).onSnapshot(function(snap){
+      state.activity = snap.docs.map(function(d){ return d.data(); });
+      renderActivity();
+    }, function(err){ console.warn("Activity listener error", err); });
+  }
+
+  var state = loadState();
+  var ui = { view:"board", attendanceTeam:"team1", expanded:{}, rosterOpen:{team1:true,team2:true,team3:true}, addFormLane:null, query:"", phase:"all", unlocked:{}, lockError:{} };
+
+  // QR-code deep link support: ?team=team2 opens straight into that team's board in Team mode.
+  (function applyUrlParams(){
+    try{
+      var params = new URLSearchParams(window.location.search);
+      var teamParam = params.get("team");
+      if (teamParam && TEAM_ORDER.indexOf(teamParam) !== -1){
+        state.role = "team";
+        state.activeTeam = teamParam;
+        ui.attendanceTeam = teamParam;
+      }
+      if (params.get("view") === "attendance") ui.view = "attendance";
+    }catch(e){ /* URLSearchParams unsupported in very old browsers — safe to ignore */ }
+  })();
+
+  /* ---------------- Helpers ---------------- */
+
+  function whoAmI(){ return state.role==="admin" ? state.activeAdmin : (state.teams[state.activeTeam].name+" member"); }
+  function initials(name){ return String(name||"?").split(/\s+/).map(function(w){return w[0]||"";}).join("").slice(0,2).toUpperCase(); }
+  function canManageTeam(tk){ return state.role==="admin" ? true : (state.role==="team" && state.activeTeam===tk); }
+  function visibleTeams(){ return state.role==="admin" ? TEAM_ORDER.slice() : [state.activeTeam]; }
+  function teamHasPin(tk){ return !!(state.teams[tk].pin && state.teams[tk].pin.length); }
+  function isLocked(tk){ return state.role==="team" && teamHasPin(tk) && !ui.unlocked[tk]; }
+
+  function logActivity(team, text){
+    var entry = { ts:Date.now(), who:whoAmI(), team:team, text:text };
+    if (FIREBASE_READY){
+      db.collection("activity").add(entry).catch(function(e){ console.warn("Activity push failed", e); });
+      // the real-time activity listener will deliver this back to us (and everyone else) shortly
+    } else {
+      state.activity.unshift(entry);
+      if (state.activity.length > 30) state.activity.length = 30;
+    }
+  }
+  function fmtDate(ts){ return new Date(ts).toLocaleDateString(undefined,{month:"short",day:"numeric"}); }
+  function fmtRange(m){ return m.start===m.end ? fmtDate(m.start) : (fmtDate(m.start)+" – "+fmtDate(m.end)); }
+  function escapeHtml(s){ return String(s).replace(/[&<>"']/g,function(c){return {"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[c];}); }
+
+  function nextStatus(s){ var i=STATUS_ORDER.indexOf(s); return STATUS_ORDER[(i+1)%STATUS_ORDER.length]; }
+
+  function officialDoneCount(tk){
+    var t=state.teams[tk]; return MILESTONES.filter(function(m){ return t.status[m.id]==="done"; }).length;
+  }
+  function customList(tk){ return state.teams[tk].custom; }
+  function teamTotal(tk){ return MILESTONES.length + customList(tk).length; }
+  function teamDone(tk){
+    var t=state.teams[tk];
+    var d = officialDoneCount(tk) + customList(tk).filter(function(c){return c.status==="done";}).length;
+    return d;
+  }
+  function teamProgress(tk){ var total=teamTotal(tk); return total ? Math.round(teamDone(tk)/total*100) : 0; }
+  function teamActiveCount(tk){
+    var t=state.teams[tk];
+    var a = MILESTONES.filter(function(m){ return t.status[m.id]==="in-progress"||t.status[m.id]==="in-review"; }).length;
+    a += customList(tk).filter(function(c){return c.status==="in-progress"||c.status==="in-review";}).length;
+    return a;
+  }
+  function passesFilters(m){
+    if (ui.phase!=="all" && m.phase!==ui.phase) return false;
+    if (ui.query){ if (m.title.toLowerCase().indexOf(ui.query.toLowerCase())===-1) return false; }
+    return true;
+  }
+
+  /* ---------------- Global countdown (shared course calendar) ---------------- */
+  function nextDeadlineMilestone(){
+    var now=Date.now();
+    var upcoming = MILESTONES.filter(function(m){ return m.end >= now; }).sort(function(a,b){ return a.end-b.end; });
+    return upcoming.length ? upcoming[0] : null;
+  }
+  function renderNextDeadline(){
+    var el=document.getElementById("nextDeadlineNote");
+    var t=nextDeadlineMilestone();
+    if (!t){ el.innerHTML="<b>Course calendar complete.</b> Final hand-in has passed."; return; }
+    var diffDays=Math.ceil((t.end-Date.now())/86400000);
+    var when = diffDays<=0 ? "due today" : "in "+diffDays+"d";
+    el.innerHTML = "Next up: <b>"+escapeHtml(t.title)+"</b> · <b>"+fmtDate(t.end)+"</b> ("+when+")";
+  }
+
+  /* ---------------- Hero + gauge ---------------- */
+  function renderHero(){
+    var teams = visibleTeams();
+    var totalDone=0, totalAll=0, active=0;
+    teams.forEach(function(tk){ totalDone+=teamDone(tk); totalAll+=teamTotal(tk); active+=teamActiveCount(tk); });
+    document.getElementById("heroBig").textContent = totalDone+"/"+totalAll;
+    document.getElementById("heroActive").textContent = active;
+
+    var gatesCleared=0;
+    PHASES.forEach(function(ph){
+      var msInPhase = MILESTONES.filter(function(m){return m.phase===ph.id;});
+      if (!msInPhase.length) return;
+      var allDone = teams.every(function(tk){
+        return msInPhase.every(function(m){ return state.teams[tk].status[m.id]==="done"; });
+      });
+      if (allDone) gatesCleared++;
+    });
+    document.getElementById("heroGates").textContent = gatesCleared+"/"+PHASES.length;
+
+    // Actual weighted completion vs. how far through the whole Jul7-Aug25 calendar we are —
+    // this is what actually makes the number an insight rather than a vanity percentage.
+    var rate = totalAll ? Math.round((totalDone + active*0.4)/totalAll*100) : 0;
+    var now = Date.now();
+    var span = PROJECT_END - PROJECT_START;
+    var elapsed = Math.min(Math.max(now - PROJECT_START, 0), span);
+    var expectedPct = span>0 ? Math.round(elapsed/span*100) : 0;
+    var delta = rate - expectedPct;
+
+    document.getElementById("rateNum").textContent = rate;
+
+    var deltaEl = document.getElementById("rateDelta");
+    var deltaCls, deltaText;
+    if (Math.abs(delta) <= 5){ deltaCls="onpace"; deltaText="On pace"; }
+    else if (delta > 5){ deltaCls="ahead"; deltaText="+"+delta+" pts ahead"; }
+    else { deltaCls="behind"; deltaText=delta+" pts behind"; }
+    deltaEl.className = "rate-delta " + deltaCls;
+    deltaEl.textContent = deltaText;
+
+    var angle = -90 + (rate/100)*180;
+    var needle=document.getElementById("gaugeNeedle");
+    if (needle) needle.setAttribute("transform","rotate("+angle+" 44 52)");
+    var expAngle = -90 + (expectedPct/100)*180;
+    var expTick=document.getElementById("gaugeExpectedTick");
+    if (expTick) expTick.setAttribute("transform","rotate("+expAngle+" 44 52)");
+    var arc=document.getElementById("gaugeArc");
+    if (arc){ var len= arc.getTotalLength ? arc.getTotalLength() : 113; arc.style.strokeDasharray=len; arc.style.strokeDashoffset=len*(1-rate/100); }
+
+    var note=document.getElementById("rateNote");
+    var basis = "<b>"+expectedPct+"%</b> of the schedule has passed, you're at <b>"+rate+"%</b> complete — ";
+    if (Math.abs(delta) <= 5) note.innerHTML = basis+"right on pace. <b>Stay steady</b> to keep it that way.";
+    else if (delta > 15) note.innerHTML = basis+Math.abs(delta)+" points ahead. <b>Comfortable lead</b> — no need to rush.";
+    else if (delta > 5) note.innerHTML = basis+Math.abs(delta)+" points ahead. <b>Keep this pace</b> to stay ahead.";
+    else if (delta < -15) note.innerHTML = basis+Math.abs(delta)+" points behind. <b>Urgent catch-up</b> needed before the next deadline.";
+    else note.innerHTML = basis+Math.abs(delta)+" points behind. <b>Pick up the pace</b> on the next gate.";
+  }
+
+  /* ---------------- Role controls ---------------- */
+  function renderRoleControls(){
+    document.querySelectorAll("#roleSeg button").forEach(function(b){ b.classList.toggle("active", b.dataset.role===state.role); });
+    var ctx=document.getElementById("ctxChips"); ctx.innerHTML="";
+    if (state.role==="admin"){
+      ["Admin 1","Admin 2"].forEach(function(name){
+        var b=document.createElement("button"); b.className="chip"+(state.activeAdmin===name?" active":""); b.textContent=name;
+        b.addEventListener("click",function(){ state.activeAdmin=name; saveState(); render(); });
+        ctx.appendChild(b);
+      });
+    } else {
+      var sel=document.createElement("select"); sel.className="pill-select";
+      TEAM_ORDER.forEach(function(tk){
+        var o=document.createElement("option"); o.value=tk;
+        o.textContent="Acting as "+state.teams[tk].name+(teamHasPin(tk)?" 🔒":"");
+        if (tk===state.activeTeam) o.selected=true;
+        sel.appendChild(o);
+      });
+      sel.addEventListener("change",function(){ state.activeTeam=sel.value; saveState(); render(); });
+      ctx.appendChild(sel);
+    }
+    var heading=document.getElementById("boardHeading");
+    if (state.role==="admin"){
+      heading.innerHTML="All team boards <span class='lock-hint'>Admin view · "+escapeHtml(state.activeAdmin)+"</span>";
+    } else {
+      heading.innerHTML=escapeHtml(state.teams[state.activeTeam].name)+" board <span class='lock-hint'>🔒 Other teams' boards are hidden</span>";
+    }
+    document.getElementById("activityHeading").textContent = state.role==="admin" ? "Recent activity (all teams)" : "Recent activity — "+state.teams[state.activeTeam].name;
+    document.getElementById("perfHeading").textContent = state.role==="admin" ? "Team standings" : "Up next for your team";
+  }
+
+  /* ---------------- Phase filter ---------------- */
+  function renderPhaseSeg(){
+    var seg=document.getElementById("phaseSeg"); seg.innerHTML="";
+    var all=document.createElement("button"); all.textContent="All phases"; all.className=(ui.phase==="all"?"active":"");
+    all.addEventListener("click",function(){ ui.phase="all"; renderPhaseSeg(); renderBoard(); });
+    seg.appendChild(all);
+    PHASES.forEach(function(ph){
+      var b=document.createElement("button"); b.textContent=ph.name; b.className=(ui.phase===ph.id?"active":"");
+      b.addEventListener("click",function(){ ui.phase=ph.id; renderPhaseSeg(); renderBoard(); });
+      seg.appendChild(b);
+    });
+  }
+
+  /* ---------------- Gate strip ---------------- */
+  function renderGateStrip(){
+    var strip=document.getElementById("gateStrip"); strip.innerHTML="";
+    var teams=visibleTeams();
+    PHASES.forEach(function(ph){
+      var ms=MILESTONES.filter(function(m){return m.phase===ph.id;});
+      if (!ms.length) return;
+      var totalInstances=ms.length*teams.length, doneInstances=0, activeInstances=0;
+      teams.forEach(function(tk){
+        ms.forEach(function(m){
+          var s=state.teams[tk].status[m.id];
+          if (s==="done") doneInstances++;
+          else if (s==="in-progress"||s==="in-review") activeInstances++;
+        });
+      });
+      var cls="gate";
+      if (doneInstances===totalInstances) cls+=" done"; else if (activeInstances>0||doneInstances>0) cls+=" active";
+      var pct=Math.round(doneInstances/totalInstances*100);
+      var div=document.createElement("div"); div.className=cls;
+      div.innerHTML='<p class="gname">'+escapeHtml(ph.name)+'</p><p class="gcount">'+doneInstances+'/'+totalInstances+' cleared</p><div class="gbar"><i style="width:'+pct+'%"></i></div>';
+      strip.appendChild(div);
+    });
+  }
+
+  /* ---------------- Lock screen ---------------- */
+  function renderLockScreen(container, tk){
+    var wrap=document.createElement("div"); wrap.className="lock-screen";
+    wrap.innerHTML =
+      '<div class="lk">🔒</div>'+
+      '<h3>'+escapeHtml(state.teams[tk].name)+' is PIN-protected</h3>'+
+      '<p>This team locked their board so other teams can\'t peek at their progress. Enter the PIN to view it.</p>'+
+      '<div class="lock-form">'+
+        '<input type="password" inputmode="numeric" maxlength="8" placeholder="PIN" id="lockInput">'+
+        '<button type="button" id="lockSubmit">Unlock</button>'+
+      '</div>'+
+      '<div class="lock-error">'+escapeHtml(ui.lockError[tk]||"")+'</div>';
+    container.appendChild(wrap);
+    setTimeout(function(){
+      var input=document.getElementById("lockInput");
+      var submit=document.getElementById("lockSubmit");
+      if (!submit) return;
+      function attempt(){
+        if (input.value === state.teams[tk].pin){
+          ui.unlocked[tk]=true; ui.lockError[tk]=""; render();
+        } else {
+          ui.lockError[tk]="Incorrect PIN — try again."; render();
+        }
+      }
+      submit.addEventListener("click",attempt);
+      input.addEventListener("keydown",function(e){ if(e.key==="Enter") attempt(); });
+      input.focus();
+    },0);
+  }
+
+  /* ---------------- Board / lanes ---------------- */
+  function renderBoard(){
+    var board=document.getElementById("board"); board.innerHTML="";
+    var teams=visibleTeams();
+
+    teams.forEach(function(tk){
+      var locked = isLocked(tk);
+      var team=state.teams[tk];
+      var lane=document.createElement("div"); lane.className="lane"+(teams.length===1?" solo":"");
+
+      if (locked){
+        var headLocked=document.createElement("div"); headLocked.className="lane-head";
+        headLocked.innerHTML='<div class="lane-head-top"><div class="lane-title-row"><span class="lane-dot" style="background:'+TEAM_COLORS[tk]+'"></span><span class="lane-title" style="cursor:default">'+escapeHtml(team.name)+'</span></div></div>';
+        lane.appendChild(headLocked);
+        renderLockScreen(lane, tk);
+        board.appendChild(lane);
+        return;
+      }
+
+      var progress=teamProgress(tk); var editable=canManageTeam(tk);
+      var head=document.createElement("div"); head.className="lane-head";
+      head.innerHTML=
+        '<div class="lane-head-top"><div class="lane-title-row">'+
+          '<span class="lane-dot" style="background:'+TEAM_COLORS[tk]+'"></span>'+
+          '<input class="lane-title" data-team="'+tk+'" value="'+escapeHtml(team.name)+'" '+(editable?"":"disabled")+' maxlength="24">'+
+          (editable?'<button class="lane-edit" title="Rename" data-rename="'+tk+'">✎</button>':'')+
+          (editable?'<button class="pin-btn'+(teamHasPin(tk)?" set":"")+'" title="'+(teamHasPin(tk)?"Change or remove PIN":"Set a PIN to lock this board")+'" data-pin="'+tk+'">'+(teamHasPin(tk)?"🔒":"🔓")+'</button>':'')+
+        '</div><span class="lane-pct">'+progress+'%</span></div>'+
+        '<div class="lane-bar"><i style="width:'+progress+'%;background:'+TEAM_COLORS[tk]+'"></i></div>';
+      lane.appendChild(head);
+
+      var body=document.createElement("div"); body.className="lane-body";
+
+      // roster
+      var rosterToggle=document.createElement("button"); rosterToggle.className="roster-toggle";
+      var rOpen=!!ui.rosterOpen[tk];
+      rosterToggle.innerHTML=(rOpen?"▾ ":"▸ ")+"Team roster";
+      rosterToggle.addEventListener("click",function(){ ui.rosterOpen[tk]=!rOpen; render(); });
+      body.appendChild(rosterToggle);
+
+      if (rOpen){
+        var rosterWrap=document.createElement("div"); rosterWrap.className="roster";
+        team.roster.forEach(function(slot, idx){
+          var roleDef = ROLES.find(function(r){return r.label===slot.role;}) || {desc:""};
+          var row=document.createElement("div"); row.className="roster-row";
+          var label=document.createElement("span"); label.className="roster-role"; label.textContent=slot.role; label.title=roleDef.desc;
+          var input=document.createElement("input"); input.className="roster-input"; input.placeholder="Name"; input.value=slot.name||""; input.disabled=!editable; input.maxLength=40;
+          input.addEventListener("change",function(){
+            var old=slot.name;
+            slot.name=input.value.trim();
+            if (old!==slot.name){ logActivity(tk, (slot.name?'Set '+slot.role+' to "'+slot.name+'"':'Cleared '+slot.role)); saveState(); }
+          });
+          row.appendChild(label); row.appendChild(input);
+          rosterWrap.appendChild(row);
+        });
+        body.appendChild(rosterWrap);
+      }
+
+      // milestones
+      var official = MILESTONES.filter(passesFilters).slice().sort(function(a,b){ return a.start-b.start; });
+      var customs = customList(tk).filter(passesFilters).slice().sort(function(a,b){ return a.start-b.start; });
+
+      if (!official.length && !customs.length){
+        var e=document.createElement("div"); e.className="empty"; e.textContent="No milestones match the current filters.";
+        body.appendChild(e);
+      } else {
+        official.forEach(function(m){ body.appendChild(renderOfficialCard(m, tk, editable)); });
+        customs.forEach(function(c){ body.appendChild(renderCustomCard(c, tk, editable)); });
+      }
+      lane.appendChild(body);
+
+      if (editable){
+        if (ui.addFormLane===tk){ lane.appendChild(renderAddForm(tk)); }
+        else {
+          var add=document.createElement("button"); add.className="lane-add"; add.textContent="+ Add team task";
+          add.addEventListener("click",function(){ ui.addFormLane=tk; render(); });
+          lane.appendChild(add);
+        }
+      }
+      board.appendChild(lane);
+    });
+
+    board.querySelectorAll(".lane-title:not([disabled])").forEach(function(input){
+      input.addEventListener("change",function(){
+        var tk=input.dataset.team; var val=input.value.trim()||state.teams[tk].name;
+        if (val!==state.teams[tk].name){ logActivity(tk,'Renamed team to "'+val+'"'); state.teams[tk].name=val; saveState(); render(); }
+      });
+    });
+    board.querySelectorAll("[data-rename]").forEach(function(btn){
+      btn.addEventListener("click",function(){ var tk=btn.dataset.rename; var input=board.querySelector('.lane-title[data-team="'+tk+'"]'); input.disabled=false; input.focus(); input.select(); });
+    });
+    board.querySelectorAll("[data-pin]").forEach(function(btn){
+      btn.addEventListener("click",function(){
+        var tk=btn.dataset.pin;
+        var current=state.teams[tk].pin;
+        var next=window.prompt(current?"Change or clear this team's PIN (leave blank to remove):":"Set a PIN to lock this team's board (numbers work best):", current||"");
+        if (next===null) return;
+        next=next.trim();
+        state.teams[tk].pin=next;
+        logActivity(tk, next? "PIN set for this board" : "PIN removed from this board");
+        saveState(); render();
+      });
+    });
+  }
+
+  function renderOfficialCard(m, tk, editable){
+    var t=state.teams[tk];
+    var status=t.status[m.id];
+    var phaseName=(PHASES.find(function(p){return p.id===m.phase;})||{}).name || "";
+    var card=document.createElement("div"); card.className="card";
+
+    var top=document.createElement("div"); top.className="card-top";
+    var tw=document.createElement("div"); tw.className="card-title-wrap";
+    var dateLine=fmtRange(m)+(m.time?" · "+m.time:"");
+    tw.innerHTML='<p class="card-title">'+escapeHtml(m.title)+'</p><p class="card-dates">'+escapeHtml(dateLine)+'</p>';
+    top.appendChild(tw);
+    card.appendChild(top);
+
+    var mid=document.createElement("div"); mid.className="card-mid";
+    var pPill=document.createElement("span"); pPill.className="pill pill-phase"; pPill.textContent=phaseName; mid.appendChild(pPill);
+
+    var sBtn=document.createElement("button"); sBtn.className="status-chip status-"+status; sBtn.textContent=STATUS_LABEL[status]; sBtn.disabled=!editable;
+    if (editable){
+      sBtn.title="Click to advance status";
+      sBtn.addEventListener("click",function(){
+        var old=status; var neu=nextStatus(status); t.status[m.id]=neu;
+        if (neu==="done") t.checklist[m.id]=t.checklist[m.id].map(function(){return true;});
+        logActivity(tk,'Moved "'+m.title+'" from '+STATUS_LABEL[old]+' to '+STATUS_LABEL[neu]);
+        saveState(); render();
+      });
+    }
+    mid.appendChild(sBtn);
+    card.appendChild(mid);
+
+    var toggle=document.createElement("button"); toggle.className="cl-toggle";
+    var isOpen=!!ui.expanded[m.id+"|"+tk];
+    var doneN=t.checklist[m.id].filter(Boolean).length, totalN=t.checklist[m.id].length;
+    toggle.innerHTML=(isOpen?"▾ ":"▸ ")+"Checklist ("+doneN+"/"+totalN+")";
+    toggle.addEventListener("click",function(){ ui.expanded[m.id+"|"+tk]=!isOpen; render(); });
+    card.appendChild(toggle);
+
+    if (isOpen){
+      var list=document.createElement("div"); list.className="checklist";
+      m.checklist.forEach(function(text, idx){
+        var done=t.checklist[m.id][idx];
+        var row=document.createElement("label"); row.className="check-row"+(done?" done":"");
+        var cb=document.createElement("input"); cb.type="checkbox"; cb.checked=done; cb.disabled=!editable;
+        cb.addEventListener("change",function(){
+          t.checklist[m.id][idx]=cb.checked;
+          logActivity(tk, (cb.checked?'Checked':'Unchecked')+' "'+text+'" on '+m.title);
+          saveState(); render();
+        });
+        var span=document.createElement("span"); span.textContent=text;
+        row.appendChild(cb); row.appendChild(span); list.appendChild(row);
+      });
+      card.appendChild(list);
+    }
+
+    var la=state.activity.find(function(a){ return a.team===tk && a.text.indexOf(m.title)!==-1; });
+    if (la){ var attr=document.createElement("p"); attr.className="attribution"; attr.textContent="Last touched by "+la.who; card.appendChild(attr); }
+    return card;
+  }
+
+  function renderCustomCard(c, tk, editable){
+    var card=document.createElement("div"); card.className="card";
+    var top=document.createElement("div"); top.className="card-top";
+    var tw=document.createElement("div"); tw.className="card-title-wrap";
+    tw.innerHTML='<p class="card-title">'+escapeHtml(c.title)+'</p><p class="card-dates">'+fmtDate(c.start)+' – '+fmtDate(c.end)+'</p>';
+    top.appendChild(tw);
+    if (editable){
+      var actions=document.createElement("div"); actions.className="card-actions";
+      var del=document.createElement("button"); del.className="icon-btn"; del.title="Delete task"; del.innerHTML="✕";
+      del.addEventListener("click",function(){
+        if (window.confirm('Delete "'+c.title+'"?')){
+          state.teams[tk].custom = state.teams[tk].custom.filter(function(x){return x.id!==c.id;});
+          logActivity(tk,'Deleted task "'+c.title+'"'); saveState(); render();
+        }
+      });
+      actions.appendChild(del); top.appendChild(actions);
+    }
+    card.appendChild(top);
+
+    var mid=document.createElement("div"); mid.className="card-mid";
+    var pill=document.createElement("span"); pill.className="pill pill-custom"; pill.textContent="Team task"; mid.appendChild(pill);
+    var sBtn=document.createElement("button"); sBtn.className="status-chip status-"+c.status; sBtn.textContent=STATUS_LABEL[c.status]; sBtn.disabled=!editable;
+    if (editable){
+      sBtn.addEventListener("click",function(){
+        var old=c.status; c.status=nextStatus(c.status);
+        logActivity(tk,'Moved "'+c.title+'" from '+STATUS_LABEL[old]+' to '+STATUS_LABEL[c.status]);
+        saveState(); render();
+      });
+    }
+    mid.appendChild(sBtn);
+    card.appendChild(mid);
+    return card;
+  }
+
+  function renderAddForm(tk){
+    var wrap=document.createElement("div"); wrap.className="add-form";
+    var todayStr=new Date().toISOString().slice(0,10);
+    wrap.innerHTML=
+      '<input type="text" placeholder="Task title" id="nt-'+tk+'" maxlength="60">'+
+      '<div class="row"><input type="date" id="ns-'+tk+'" value="'+todayStr+'"><input type="date" id="ne-'+tk+'" value="'+todayStr+'"></div>'+
+      '<button type="button" id="nb-'+tk+'">Add task</button>';
+    setTimeout(function(){
+      var b=document.getElementById("nb-"+tk); if (!b) return;
+      b.addEventListener("click",function(){
+        var t=document.getElementById("nt-"+tk), s=document.getElementById("ns-"+tk), e=document.getElementById("ne-"+tk);
+        var title=t.value.trim(); if (!title){ t.focus(); return; }
+        var start=new Date(s.value).getTime(); var end=Math.max(new Date(e.value).getTime(), start);
+        state.teams[tk].custom.push({ id:"c"+Date.now(), title:title, start:start, end:end, status:"not-started" });
+        logActivity(tk,'Added team task "'+title+'"'); ui.addFormLane=null; saveState(); render();
+      });
+    },0);
+    return wrap;
+  }
+
+  /* ---------------- Activity + standings ---------------- */
+  function scopedActivity(){
+    if (state.role==="admin") return state.activity;
+    return state.activity.filter(function(a){ return a.team===state.activeTeam; });
+  }
+  function renderActivity(){
+    var list=document.getElementById("activityList");
+    if (state.role==="team" && isLocked(state.activeTeam)){ list.innerHTML='<div class="activity-empty">Unlock this board to see its activity.</div>'; return; }
+    var items=scopedActivity().slice(0,7);
+    if (!items.length){ list.innerHTML='<div class="activity-empty">No activity yet.</div>'; return; }
+    list.innerHTML="";
+    items.forEach(function(a){
+      var time=new Date(a.ts).toLocaleTimeString(undefined,{hour:"2-digit",minute:"2-digit"});
+      var row=document.createElement("div"); row.className="activity-item";
+      row.innerHTML='<span class="who">'+escapeHtml(initials(a.who))+'</span><span class="txt"><b>'+escapeHtml(a.who)+'</b> '+escapeHtml(a.text)+'</span><span class="t">'+time+'</span>';
+      list.appendChild(row);
+    });
+  }
+  function renderPerformers(){
+    var host=document.getElementById("performers"); host.innerHTML="";
+    if (state.role==="admin"){
+      var ranked=TEAM_ORDER.map(function(tk){ return {tk:tk,name:state.teams[tk].name,pct:teamProgress(tk)}; }).sort(function(a,b){return b.pct-a.pct;});
+      ranked.forEach(function(r){
+        var row=document.createElement("div"); row.className="perf-item";
+        row.innerHTML='<span class="perf-av" style="background:'+TEAM_HEX[r.tk]+'">'+escapeHtml(initials(r.name))+'</span>'+
+          '<div><p class="perf-name">'+escapeHtml(r.name)+'</p><p class="perf-sub">'+r.pct+'% of milestones done</p></div>'+
+          '<span class="perf-score">'+(r.pct/10).toFixed(1)+'</span>';
+        host.appendChild(row);
+      });
+      return;
+    }
+    if (isLocked(state.activeTeam)){ host.innerHTML='<div class="activity-empty">Unlock this board to see what\'s next.</div>'; return; }
+    var tk=state.activeTeam; var t=state.teams[tk];
+    var order={ "in-progress":0,"in-review":1,"not-started":2,"done":3 };
+    var list=MILESTONES.map(function(m){ return {title:m.title, status:t.status[m.id], end:m.end}; })
+      .concat(customList(tk).map(function(c){ return {title:c.title, status:c.status, end:c.end}; }));
+    list.sort(function(a,b){ if(order[a.status]!==order[b.status]) return order[a.status]-order[b.status]; return a.end-b.end; });
+    list.slice(0,4).forEach(function(m){
+      var row=document.createElement("div"); row.className="perf-item";
+      row.innerHTML='<span class="perf-av" style="background:'+TEAM_HEX[tk]+'">'+escapeHtml(m.title.slice(0,2).toUpperCase())+'</span>'+
+        '<div><p class="perf-name">'+escapeHtml(m.title)+'</p><p class="perf-sub">'+STATUS_LABEL[m.status]+' · <b>'+fmtDate(m.end)+'</b></p></div>'+
+        '<span class="perf-score">'+STATUS_LABEL[m.status].slice(0,1)+'</span>';
+      host.appendChild(row);
+    });
+    if (!list.length) host.innerHTML='<div class="activity-empty">No milestones yet.</div>';
+  }
+
+  /* ---------------- Top nav / view switch ---------------- */
+  function renderTopNav(){
+    document.querySelectorAll(".topnav a").forEach(function(a){ a.classList.toggle("on", a.dataset.view===ui.view); });
+    document.getElementById("dashboardView").style.display = ui.view==="board" ? "" : "none";
+    document.getElementById("attendanceView").style.display = ui.view==="attendance" ? "" : "none";
+  }
+
+  /* ---------------- Attendance register ---------------- */
+  function renderAttendance(){
+    var heading=document.getElementById("attendanceHeading");
+    var teamSel=document.getElementById("attTeamSelect");
+    var panel=document.getElementById("attendancePanel");
+    var tk;
+
+    if (state.role==="admin"){
+      teamSel.style.display="";
+      teamSel.innerHTML="";
+      TEAM_ORDER.forEach(function(k){
+        var o=document.createElement("option"); o.value=k; o.textContent=state.teams[k].name;
+        if (k===ui.attendanceTeam) o.selected=true;
+        teamSel.appendChild(o);
+      });
+      teamSel.onchange=function(){ ui.attendanceTeam=teamSel.value; renderAttendance(); };
+      tk=ui.attendanceTeam;
+    } else {
+      teamSel.style.display="none";
+      tk=state.activeTeam;
+    }
+
+    var team=state.teams[tk];
+    heading.innerHTML=escapeHtml(team.name)+" attendance register"+(state.role==="team"?" <span class='lock-hint'>🔒 Other teams hidden</span>":"");
+
+    panel.innerHTML="";
+    if (isLocked(tk)){
+      var lockWrap=document.createElement("div"); lockWrap.className="attendance-panel";
+      panel.appendChild(lockWrap);
+      renderLockScreen(lockWrap, tk);
+      return;
+    }
+
+    var editable=canManageTeam(tk);
+    var wrap=document.createElement("div"); wrap.className="attendance-panel";
+    var table=document.createElement("table"); table.className="att-table";
+
+    var thead=document.createElement("thead");
+    var headRow=document.createElement("tr");
+    headRow.innerHTML="<th>Session</th>";
+    team.roster.forEach(function(slot){
+      var th=document.createElement("th"); th.textContent=slot.name||slot.role;
+      if (!slot.name) th.title=slot.role;
+      headRow.appendChild(th);
+    });
+    thead.appendChild(headRow); table.appendChild(thead);
+
+    var tbody=document.createElement("tbody");
+    var sorted=MILESTONES.slice().sort(function(a,b){ return a.start-b.start; });
+    sorted.forEach(function(m){
+      var tr=document.createElement("tr");
+      var tdS=document.createElement("td");
+      tdS.innerHTML="<span class='att-session'>"+escapeHtml(m.title)+"</span><span class='att-date'>"+escapeHtml(fmtRange(m))+"</span>";
+      tr.appendChild(tdS);
+      team.roster.forEach(function(slot, idx){
+        var td=document.createElement("td"); td.className="att-cell";
+        var val=team.attendance[m.id][idx];
+        var btn=document.createElement("button");
+        btn.className="att-btn"+(val?(" "+val):"");
+        btn.textContent=val?ATT_LABEL[val].slice(0,1):"–";
+        btn.title=(slot.name||slot.role)+" · "+ATT_LABEL[val];
+        btn.disabled=!editable;
+        if (editable){
+          btn.addEventListener("click",function(){
+            var old=team.attendance[m.id][idx];
+            var neu=nextAttStatus(old);
+            team.attendance[m.id][idx]=neu;
+            logActivity(tk,(slot.name||slot.role)+" marked "+ATT_LABEL[neu]+" for "+m.title);
+            saveState(); render();
+          });
+        }
+        td.appendChild(btn);
+        tr.appendChild(td);
+      });
+      tbody.appendChild(tr);
+    });
+    table.appendChild(tbody);
+
+    var tfoot=document.createElement("tfoot");
+    var sumRow=document.createElement("tr"); sumRow.className="att-summary";
+    sumRow.innerHTML="<td>Present rate</td>";
+    team.roster.forEach(function(slot, idx){
+      var total=0, present=0;
+      sorted.forEach(function(m){
+        var v=team.attendance[m.id][idx];
+        if (v){ total++; if (v==="present") present++; }
+      });
+      var pct=total?Math.round(present/total*100):0;
+      var td=document.createElement("td"); td.className="att-cell"; td.textContent=total?pct+"%":"–";
+      sumRow.appendChild(td);
+    });
+    tfoot.appendChild(sumRow); table.appendChild(tfoot);
+
+    wrap.appendChild(table);
+    panel.appendChild(wrap);
+  }
+
+  /* ---------------- Master render ---------------- */
+  function render(){
+    renderTopNav();
+    renderRoleControls();
+    renderHero();
+    renderNextDeadline();
+    renderGateStrip();
+    renderPhaseSeg();
+    renderBoard();
+    renderActivity();
+    renderPerformers();
+    renderAttendance();
+  }
+
+  /* ---------------- Static wiring ---------------- */
+  document.querySelectorAll(".topnav a").forEach(function(a){
+    a.addEventListener("click",function(e){ e.preventDefault(); ui.view=a.dataset.view; render(); });
+  });
+  document.getElementById("roleSeg").addEventListener("click",function(e){ var b=e.target.closest("button[data-role]"); if(!b) return; state.role=b.dataset.role; saveState(); render(); });
+  document.getElementById("searchInput").addEventListener("input",function(e){ ui.query=e.target.value; renderBoard(); });
+  document.getElementById("resetBtn").addEventListener("click",function(){
+    if (window.confirm("Reset ALL teams back to the default CX02 rundown? This clears rosters, PINs, statuses, and custom tasks.")){
+      state=buildDefaultState(); ui.unlocked={}; saveState(); render();
+    }
+  });
+  document.getElementById("rateGo").addEventListener("click",function(){ document.getElementById("gateStrip").scrollIntoView({behavior:"smooth"}); });
+  document.getElementById("heroCta").addEventListener("click",function(){ document.getElementById("gateStrip").scrollIntoView({behavior:"smooth"}); });
+
+  var syncFoot=document.getElementById("syncFoot");
+  syncFoot.textContent = (FIREBASE_READY ? "🔄 Synced live across devices" : "💾 Saved locally in this browser only") + " · set a per-team PIN to keep boards private on shared devices";
+
+  render();
+  subscribeFirestore();
+})();
+</script>
+</body>
+</html>
