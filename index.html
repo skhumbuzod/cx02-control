@@ -400,43 +400,43 @@
     { id:"p6", name:"Final Hand-in" }
   ];
 
-  // NOTE: sessions run Tue/Thu/Sat with no gaps, starting from the Tue 21 Jul kickoff, right up until
-  // Campus Immersion. Confirmed against reality: Client Brief landed Thu 23 Jul (the day before Fri 24 Jul).
-  // Campus Immersion is defaulted to the next open slot, Tue 18 Aug — flag if the real start date differs.
+  // NOTE: dates corrected against the official CX02 Timings/Deadlines slide (supersedes the earlier
+  // Tue/Thu/Sat estimate). Hand-ins (logistics) date isn't listed on that slide — placed the day between
+  // Internal Presentations and Client Presentations as a best guess; flag if that's wrong.
   var MILESTONES = [
-    { id:"m1", title:"Brand & Category Research", phase:"p1", start:D(2026,7,7), end:D(2026,7,20), time:null,
+    { id:"m1", title:"Brand & Category Research", phase:"p1", start:D(2026,7,21), end:D(2026,8,3), time:null,
       checklist:["Category & competitor scan complete","Brand audit documented","Key findings logged for the team"] },
-    { id:"m2", title:"Project Brief & UCD Kickoff", phase:"p1", start:D(2026,7,21), end:D(2026,7,21), time:null,
+    { id:"m2", title:"Project Brief & UCD Kickoff", phase:"p1", start:D(2026,8,4), end:D(2026,8,4), time:null,
       checklist:["Project brief received","UCD teammates onboarded","All 6 roles confirmed"] },
-    { id:"m3", title:"Client Brief", phase:"p1", start:D(2026,7,23), end:D(2026,7,23), time:null,
+    { id:"m3", title:"Client Brief", phase:"p1", start:D(2026,8,6), end:D(2026,8,6), time:null,
       checklist:["Attend client brief session","Log key requirements","Confirm budget & timing","Identify internal leads"] },
-    { id:"m4", title:"Insight Reverts", phase:"p2", start:D(2026,7,25), end:D(2026,7,25), time:null,
+    { id:"m4", title:"Insight Reverts", phase:"p2", start:D(2026,8,11), end:D(2026,8,11), time:null,
       checklist:["Interpretation of the brief","Findings to date","Research objectives & plan","Questions ready for Client Revert"] },
-    { id:"m5", title:"Client Reverts", phase:"p2", start:D(2026,7,28), end:D(2026,7,28), time:null,
+    { id:"m5", title:"Client Reverts", phase:"p2", start:D(2026,8,13), end:D(2026,8,13), time:null,
       checklist:["Align on brief interpretation","Confirm scope changes","Sign-off from client contact"] },
-    { id:"m6", title:"Strategy Review", phase:"p2", start:D(2026,7,30), end:D(2026,7,30), time:"+ optional session Sat 1 Aug",
+    { id:"m6", title:"Strategy Review", phase:"p2", start:D(2026,8,20), end:D(2026,8,20), time:"+ optional session Sat 23 Aug",
       checklist:["Overview of macro factors","Summary of target marketing","Insights presented","Strategic solution outlined","Get-To-By defined"] },
-    { id:"m7", title:"Creative Brief", phase:"p2", start:D(2026,8,4), end:D(2026,8,4), time:null,
+    { id:"m7", title:"Creative Brief", phase:"p2", start:D(2026,8,27), end:D(2026,8,27), time:null,
       checklist:["One-pager Creative Brief drafted","Presents marketing strategy in an inspiring, creative way"] },
-    { id:"m8", title:"Concept Review 1", phase:"p3", start:D(2026,8,6), end:D(2026,8,6), time:null,
+    { id:"m8", title:"Concept Review 1", phase:"p3", start:D(2026,8,30), end:D(2026,8,30), time:null,
       checklist:["G-T-B presented (WHAT)","5 big ideas/concepts presented (HOW)","Each idea has a one-line working campaign name","Each idea scamped: print ad/poster + 1 other touchpoint","Each scamp has a headline/tagline","Copy deck with 5+ headline/tagline options"] },
-    { id:"m9", title:"Concept Review 2", phase:"p3", start:D(2026,8,8), end:D(2026,8,8), time:null,
+    { id:"m9", title:"Concept Review 2", phase:"p3", start:D(2026,9,3), end:D(2026,9,3), time:null,
       checklist:["Two strongest ideas selected","3 executions scamped per idea","Headline on every scamp","Copy deck with more options per execution","Stylistic moodboard per idea"] },
-    { id:"m10", title:"Touchpoint Review", phase:"p4", start:D(2026,8,11), end:D(2026,8,11), time:null,
+    { id:"m10", title:"Touchpoint Review", phase:"p4", start:D(2026,9,6), end:D(2026,9,6), time:null,
       checklist:["Success definition for the brand articulated","Desired consumer action defined","Consumer journey phases mapped","Touchpoint mix justified strategically","Roll-out & phasing considered","Measurement approach & currencies defined","Budget & ROI considered"] },
-    { id:"m11", title:"Craft Review 1", phase:"p4", start:D(2026,8,13), end:D(2026,8,13), time:null,
+    { id:"m11", title:"Craft Review 1", phase:"p4", start:D(2026,9,6), end:D(2026,9,6), time:null,
       checklist:["Media plan presented","3 digitally executed touchpoints with final copy"] },
-    { id:"m12", title:"Craft Review 2", phase:"p4", start:D(2026,8,15), end:D(2026,8,15), time:null,
+    { id:"m12", title:"Craft Review 2", phase:"p4", start:D(2026,9,10), end:D(2026,9,10), time:null,
       checklist:["At least 50% of media touchpoints digitally executed","Executions presented in situ"] },
-    { id:"m13", title:"Campus Immersion", phase:"p5", start:D(2026,8,18), end:D(2026,8,21), time:"09h00 start – 14h00 end",
+    { id:"m13", title:"Campus Immersion", phase:"p5", start:D(2026,9,10), end:D(2026,9,13), time:"09h00 start – 14h00 end",
       checklist:["On-campus check-in complete","Immersion schedule reviewed","Team materials packed for campus"] },
-    { id:"m14", title:"Internal Presentations", phase:"p5", start:D(2026,8,19), end:D(2026,8,19), time:null,
+    { id:"m14", title:"Internal Presentations", phase:"p5", start:D(2026,9,11), end:D(2026,9,11), time:null,
       checklist:["15-min dress-rehearsal presentation ready","Presented as if to the client","Account Manager logging lecturer feedback"] },
-    { id:"m15", title:"Hand-ins (logistics)", phase:"p5", start:D(2026,8,20), end:D(2026,8,20), time:null,
+    { id:"m15", title:"Hand-ins (logistics)", phase:"p5", start:D(2026,9,12), end:D(2026,9,12), time:null,
       checklist:["All job bags up to date","Final presentation ready","Tech checks done in Main Auditorium","Presentation uploaded to Moodle","Final check-in with lecturers"] },
-    { id:"m16", title:"Client Presentations", phase:"p5", start:D(2026,8,21), end:D(2026,8,21), time:"Tech check 8:30 · Client 9:30 · Present 10:00",
+    { id:"m16", title:"Client Presentations", phase:"p5", start:D(2026,9,13), end:D(2026,9,13), time:"Tech check 8:30 · Client 9:30 · Present 10:00",
       checklist:["Tech checks done 8:30–9:30am","Ready to greet client at 9:30am","15-min presentation + 15-min client feedback delivered","Celebrate on Red & Yellow rooftop"] },
-    { id:"m17", title:"Hand-in Document", phase:"p6", start:D(2026,8,25), end:D(2026,8,25), time:null,
+    { id:"m17", title:"Hand-in Document", phase:"p6", start:D(2026,9,17), end:D(2026,9,17), time:null,
       checklist:["All assets compiled into final document","Document proofed","Final file submitted","Client confirmation received"] }
   ];
 
