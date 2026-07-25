@@ -286,7 +286,7 @@
         </div>
         <div class="ctx-chips" id="ctxChips"></div>
       </div>
-      <button class="ghost" id="resetBtn">Reset data</button>
+      <!-- "Reset data" removed: with live sync one click would wipe every team's progress for everyone. -->
     </div>
 
     <div id="dashboardView">
@@ -351,7 +351,10 @@
     <div id="attendanceView" style="display:none">
       <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap">
         <h3 class="section-title" id="attendanceHeading">Attendance register</h3>
-        <select class="pill-select" id="attTeamSelect" style="display:none"></select>
+        <div style="display:flex;align-items:center;gap:10px">
+          <select class="pill-select" id="attTeamSelect" style="display:none"></select>
+          <button class="ghost" id="attPdfBtn" style="display:none">⤓ Download PDF</button>
+        </div>
       </div>
       <div id="attendancePanel" style="margin-top:14px"></div>
     </div>
@@ -366,6 +369,19 @@
 
   var STORAGE_KEY = "cx02ControlState.v1";
   function D(y,m,d){ return new Date(y, m-1, d).getTime(); } // m is 1-based month
+
+  /* Admin gate — only the 2 admins should be able to see all three boards at once.
+     Change this string to whatever you want the admin passcode to be, then re-upload.
+     Note: like the team PINs, this is a courtesy lock, not real security — anyone who
+     views the page source can read it. It stops casual snooping between teams, nothing more. */
+  var ADMIN_PIN = "cx02admin";
+  var ADMIN_UNLOCK_KEY = "cx02ControlAdminUnlocked.v1";
+  function adminUnlockedOnThisDevice(){
+    try{ return localStorage.getItem(ADMIN_UNLOCK_KEY) === "yes"; }catch(e){ return false; }
+  }
+  function setAdminUnlocked(v){
+    try{ v ? localStorage.setItem(ADMIN_UNLOCK_KEY,"yes") : localStorage.removeItem(ADMIN_UNLOCK_KEY); }catch(e){}
+  }
 
   /* ---------------- Optional real-time sync (Firebase) ----------------
      Leave FIREBASE_CONFIG untouched to run in local-only mode (each browser keeps its own copy).
@@ -506,7 +522,7 @@
       teams[tk] = t;
     });
     return {
-      role:"admin",
+      role:"team",            // new visitors start in Team view; Admin needs the passcode
       activeAdmin:"Admin 1",
       activeTeam:"team1",
       teams: teams,
@@ -576,6 +592,10 @@
 
   var state = loadState();
   var ui = { view:"board", attendanceTeam:"team1", expanded:{}, rosterOpen:{team1:true,team2:true,team3:true}, addFormLane:null, query:"", phase:"all", unlocked:{}, lockError:{} };
+
+  // Anyone whose browser still has role:"admin" saved from before the passcode existed
+  // gets dropped back to Team view until they enter it.
+  if (state.role==="admin" && !adminUnlockedOnThisDevice()) state.role="team";
 
   // QR-code deep link support: ?team=team2 opens straight into that team's board in Team mode.
   (function applyUrlParams(){
@@ -1079,12 +1099,84 @@
     document.getElementById("attendanceView").style.display = ui.view==="attendance" ? "" : "none";
   }
 
+  /* ---------------- Attendance PDF export (admin only) ----------------
+     Builds a clean printable sheet for all three teams and opens the browser's
+     print dialog, where "Save as PDF" is the default destination. No external
+     libraries, so nothing to break if a CDN is unreachable. */
+  function attendanceExportHtml(){
+    var generated = new Date().toLocaleString(undefined,{dateStyle:"long",timeStyle:"short"});
+    var sorted = MILESTONES.slice().sort(function(a,b){ return a.start-b.start; });
+    var css = "@page{size:A4 landscape;margin:14mm}"
+      + "body{font-family:Arial,Helvetica,sans-serif;color:#1c1c1c;margin:0}"
+      + "h1{font-size:17px;margin:0 0 2px}h2{font-size:14px;margin:0 0 8px;}"
+      + ".meta{font-size:10px;color:#666;margin:0 0 14px}"
+      + "section{page-break-after:always}section:last-of-type{page-break-after:auto}"
+      + "table{border-collapse:collapse;width:100%;font-size:9.5px}"
+      + "th,td{border:1px solid #bbb;padding:4px 5px;text-align:center}"
+      + "th{background:#eee;font-size:9px}"
+      + "td.s,th.s{text-align:left;width:210px}"
+      + ".d{color:#666;font-size:8.5px}"
+      + "tr.sum td{background:#f6f6f6;font-weight:bold}"
+      + ".legend{font-size:9px;color:#666;margin-top:8px}";
+
+    var body = "";
+    TEAM_ORDER.forEach(function(tk){
+      var team = state.teams[tk];
+      var tally = team.roster.map(function(){ return {present:0,late:0,absent:0}; });
+
+      var rows = sorted.map(function(m){
+        var cells = team.roster.map(function(slot, idx){
+          var v = (team.attendance[m.id]||[])[idx] || "";
+          if (v==="present") tally[idx].present++;
+          else if (v==="late") tally[idx].late++;
+          else if (v==="absent") tally[idx].absent++;
+          return "<td>"+(v ? ATT_LABEL[v] : "—")+"</td>";
+        }).join("");
+        return "<tr><td class='s'><b>"+escapeHtml(m.title)+"</b><br><span class='d'>"
+             + escapeHtml(fmtRange(m))+"</span></td>"+cells+"</tr>";
+      }).join("");
+
+      var head = team.roster.map(function(slot){
+        return "<th>"+escapeHtml(slot.name||slot.role)+"<br><span class='d'>"+escapeHtml(slot.role)+"</span></th>";
+      }).join("");
+
+      var sum = tally.map(function(t){
+        return "<td>"+t.present+"P · "+t.late+"L · "+t.absent+"A</td>";
+      }).join("");
+
+      body += "<section><h2>"+escapeHtml(team.name)+"</h2><table>"
+            + "<thead><tr><th class='s'>Session</th>"+head+"</tr></thead>"
+            + "<tbody>"+rows+"<tr class='sum'><td class='s'>Totals</td>"+sum+"</tr></tbody></table>"
+            + "<p class='legend'>P = Present · L = Late · A = Absent · — = not yet marked</p></section>";
+    });
+
+    return "<!doctype html><html><head><meta charset='utf-8'>"
+      + "<title>CX02 Attendance Register</title><style>"+css+"</style></head><body>"
+      + "<h1>CX02 Crossover Challenge — Attendance Register</h1>"
+      + "<p class='meta'>Generated "+escapeHtml(generated)+"</p>"
+      + body + "</body></html>";
+  }
+
+  function downloadAttendancePdf(){
+    if (state.role!=="admin") return;                 // belt and braces
+    var w = window.open("", "_blank");
+    if (!w){ window.alert("Your browser blocked the export window. Allow pop-ups for this site and try again."); return; }
+    w.document.open();
+    w.document.write(attendanceExportHtml());
+    w.document.close();
+    // give the new document a moment to lay out before opening the print dialog
+    setTimeout(function(){ try{ w.focus(); w.print(); }catch(e){} }, 400);
+  }
+
   /* ---------------- Attendance register ---------------- */
   function renderAttendance(){
     var heading=document.getElementById("attendanceHeading");
     var teamSel=document.getElementById("attTeamSelect");
+    var pdfBtn=document.getElementById("attPdfBtn");
     var panel=document.getElementById("attendancePanel");
     var tk;
+
+    if (pdfBtn) pdfBtn.style.display = state.role==="admin" ? "" : "none";
 
     if (state.role==="admin"){
       teamSel.style.display="";
@@ -1194,13 +1286,25 @@
   document.querySelectorAll(".topnav a").forEach(function(a){
     a.addEventListener("click",function(e){ e.preventDefault(); ui.view=a.dataset.view; render(); });
   });
-  document.getElementById("roleSeg").addEventListener("click",function(e){ var b=e.target.closest("button[data-role]"); if(!b) return; state.role=b.dataset.role; saveState(); render(); });
-  document.getElementById("searchInput").addEventListener("input",function(e){ ui.query=e.target.value; renderBoard(); });
-  document.getElementById("resetBtn").addEventListener("click",function(){
-    if (window.confirm("Reset ALL teams back to the default CX02 rundown? This clears rosters, PINs, statuses, and custom tasks.")){
-      state=buildDefaultState(); ui.unlocked={}; saveState(); render();
+  document.getElementById("roleSeg").addEventListener("click",function(e){
+    var b=e.target.closest("button[data-role]"); if(!b) return;
+    var wanted=b.dataset.role;
+    if (wanted==="admin" && !adminUnlockedOnThisDevice()){
+      var entry=window.prompt("Admin view shows every team's board and attendance.\nEnter the admin passcode to continue:","");
+      if (entry===null) return;                       // cancelled — stay where they are
+      if (entry.trim() !== ADMIN_PIN){
+        window.alert("That passcode isn't right — staying in Team view.");
+        return;
+      }
+      setAdminUnlocked(true);                          // remember on this device only
     }
+    state.role=wanted; saveState(); render();
   });
+  document.getElementById("searchInput").addEventListener("input",function(e){ ui.query=e.target.value; renderBoard(); });
+  /* No global reset control by design — this board is live and shared, so a single click
+     would destroy every team's progress for everyone at once. A reset can still be performed
+     deliberately from the Firebase console if one is ever genuinely needed. */
+  document.getElementById("attPdfBtn").addEventListener("click", downloadAttendancePdf);
   document.getElementById("rateGo").addEventListener("click",function(){ document.getElementById("gateStrip").scrollIntoView({behavior:"smooth"}); });
   document.getElementById("heroCta").addEventListener("click",function(){ document.getElementById("gateStrip").scrollIntoView({behavior:"smooth"}); });
 
