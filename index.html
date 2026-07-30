@@ -562,12 +562,26 @@
       return p;
     }catch(e){ return buildDefaultState(); }
   }
+  /* Write-safety state. Two rules prevent a device from destroying other people's work:
+       1. hydrated[tk] — we never write a team's document until we have received its current
+          contents from Firestore at least once. Before that, whatever is in this browser is
+          just a default/stale guess and must not be allowed to overwrite live data.
+       2. remoteMirror[tk] — the exact JSON we last saw on (or sent to) the server. We only
+          write a team whose local copy actually differs, so touching one team can never
+          clobber the other two. */
+  var hydrated = {};
+  var remoteMirror = {};
+
   function saveState(){
     try{ localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); }catch(e){}
     if (FIREBASE_READY) pushTeamsToFirestore();
   }
   function pushTeamsToFirestore(){
     TEAM_ORDER.forEach(function(tk){
+      if (!hydrated[tk]) return;                        // haven't seen the server copy yet — never overwrite
+      var local = JSON.stringify(state.teams[tk]);
+      if (local === remoteMirror[tk]) return;           // this team is unchanged — don't touch it
+      remoteMirror[tk] = local;
       db.collection("teams").doc(tk).set(state.teams[tk]).catch(function(e){ console.warn("Firestore save failed for "+tk, e); });
     });
   }
@@ -576,11 +590,15 @@
     TEAM_ORDER.forEach(function(tk){
       db.collection("teams").doc(tk).onSnapshot(function(docSnap){
         if (docSnap.exists){
-          state.teams[tk] = normalizeTeam(docSnap.data());
+          var data = normalizeTeam(docSnap.data());
+          state.teams[tk] = data;
+          remoteMirror[tk] = JSON.stringify(data);
         } else {
-          // first device to connect seeds Firestore with the local default for this team
+          // genuinely absent (very first run ever) — seed it from local
+          remoteMirror[tk] = JSON.stringify(state.teams[tk]);
           db.collection("teams").doc(tk).set(state.teams[tk]).catch(function(e){ console.warn(e); });
         }
+        hydrated[tk] = true;                            // from here on this team is safe to write
         render();
       }, function(err){ console.warn("Team listener error", tk, err); });
     });
