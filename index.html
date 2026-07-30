@@ -252,6 +252,32 @@
   .att-table th{font-family:var(--font);font-weight:600;color:var(--ink-soft);font-size:10.5px;text-transform:uppercase;letter-spacing:.4px;}
   .att-session{display:block;font-weight:600;color:var(--ink);}
   .att-date{display:block;font-size:10.5px;color:var(--ink-dim);font-weight:700;}
+
+  /* ---- Job bag ---- */
+  .jb-panel{background:var(--card);border-radius:var(--r-lg);padding:18px 20px;}
+  .jb-form{display:grid;grid-template-columns:1.4fr 2fr 1fr 1fr auto;gap:8px;align-items:center;margin-bottom:16px;}
+  .jb-form input,.jb-form select{font-family:var(--font-body);font-size:12px;padding:9px 11px;border:1px solid var(--line);
+    border-radius:10px;background:#fff;color:var(--ink);width:100%;}
+  .jb-form input:focus,.jb-form select:focus{outline:none;border-color:var(--teal);}
+  .jb-add{background:var(--teal);color:#fff;border:none;border-radius:10px;padding:9px 16px;font-size:12px;
+    font-weight:600;font-family:var(--font-body);white-space:nowrap;}
+  .jb-add:hover{background:#2f6f6b;}
+  .jb-err{color:var(--absent);font-size:11px;margin:-8px 0 12px;}
+  .jb-group{margin-bottom:18px;}
+  .jb-group-h{font-size:10px;font-weight:700;letter-spacing:1.4px;text-transform:uppercase;color:var(--ink-dim);
+    margin:0 0 8px;padding-bottom:6px;border-bottom:1px solid var(--line);}
+  .jb-item{display:flex;align-items:center;gap:12px;padding:10px 12px;border:1px solid var(--line);
+    border-radius:12px;margin-bottom:7px;background:#fff;}
+  .jb-main{flex:1;min-width:0;}
+  .jb-title{font-size:13px;font-weight:600;margin:0 0 2px;word-break:break-word;}
+  .jb-meta{font-size:10.5px;color:var(--ink-dim);margin:0;}
+  .jb-open{font-size:11px;font-weight:600;color:var(--teal);text-decoration:none;border:1px solid var(--teal);
+    padding:6px 12px;border-radius:999px;white-space:nowrap;}
+  .jb-open:hover{background:var(--teal);color:#fff;}
+  .jb-del{border:none;background:none;color:var(--ink-dim);font-size:14px;padding:4px 6px;flex:none;}
+  .jb-del:hover{color:var(--absent);}
+  .jb-empty{font-size:12px;color:var(--ink-dim);padding:18px 0;text-align:center;}
+  @media(max-width:900px){ .jb-form{grid-template-columns:1fr;} }
   .att-cell{text-align:center!important;}
   .att-btn{border:1px solid var(--line-2);background:#fff;color:var(--ink-dim);font-size:10.5px;font-weight:700;width:34px;height:26px;border-radius:7px;}
   .att-btn.present{background:var(--done-soft);color:var(--done);border-color:transparent;}
@@ -274,6 +300,7 @@
       <div class="topnav">
         <a href="#" class="on" data-view="board">Dashboard</a>
         <a href="#" data-view="attendance">Attendance</a>
+        <a href="#" data-view="jobbag">Job bag</a>
       </div>
       <div class="members"><span>18 members · 3 teams</span></div>
     </div>
@@ -357,6 +384,14 @@
         </div>
       </div>
       <div id="attendancePanel" style="margin-top:14px"></div>
+    </div>
+
+    <div id="jobbagView" style="display:none">
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap">
+        <h3 class="section-title" id="jobbagHeading">Job bag</h3>
+        <select class="pill-select" id="jbTeamSelect" style="display:none"></select>
+      </div>
+      <div id="jobbagPanel" style="margin-top:14px"></div>
     </div>
 
     <p class="foot" id="syncFoot">CX02 Control · set a per-team PIN to keep boards private on shared devices</p>
@@ -510,7 +545,8 @@
       status: status,
       checklist: checklist,
       custom: [],
-      attendance: attendance
+      attendance: attendance,
+      jobbag: []
     };
   }
 
@@ -540,6 +576,7 @@
     if (!t.custom) t.custom = [];
     if (typeof t.pin !== "string") t.pin = "";
     if (!t.attendance) t.attendance = {};
+    if (!Array.isArray(t.jobbag)) t.jobbag = [];
     MILESTONES.forEach(function(m){
       if (!t.status[m.id]) t.status[m.id] = "not-started";
       if (!t.checklist[m.id]) t.checklist[m.id] = m.checklist.map(function(){ return false; });
@@ -609,7 +646,7 @@
   }
 
   var state = loadState();
-  var ui = { view:"board", attendanceTeam:"team1", expanded:{}, rosterOpen:{team1:true,team2:true,team3:true}, addFormLane:null, query:"", phase:"all", unlocked:{}, lockError:{} };
+  var ui = { view:"board", attendanceTeam:"team1", jobbagTeam:"team1", expanded:{}, rosterOpen:{team1:true,team2:true,team3:true}, addFormLane:null, query:"", phase:"all", unlocked:{}, lockError:{} };
 
   // Anyone whose browser still has role:"admin" saved from before the passcode existed
   // gets dropped back to Team view until they enter it.
@@ -624,8 +661,10 @@
         state.role = "team";
         state.activeTeam = teamParam;
         ui.attendanceTeam = teamParam;
+        ui.jobbagTeam = teamParam;
       }
-      if (params.get("view") === "attendance") ui.view = "attendance";
+      var v = params.get("view");
+      if (v === "attendance" || v === "jobbag") ui.view = v;
     }catch(e){ /* URLSearchParams unsupported in very old browsers — safe to ignore */ }
   })();
 
@@ -1115,6 +1154,134 @@
     document.querySelectorAll(".topnav a").forEach(function(a){ a.classList.toggle("on", a.dataset.view===ui.view); });
     document.getElementById("dashboardView").style.display = ui.view==="board" ? "" : "none";
     document.getElementById("attendanceView").style.display = ui.view==="attendance" ? "" : "none";
+    document.getElementById("jobbagView").style.display = ui.view==="jobbag" ? "" : "none";
+  }
+
+  /* ---------------- Job bag ----------------
+     A per-team index of where the actual work lives (Google Drive, Figma, Canva…).
+     Links only — no files are stored here, so there's nothing to fill up or pay for. */
+
+  // Only ever allow http/https through. Blocks javascript:/data: links being stored and clicked.
+  function safeUrl(raw){
+    var s = String(raw||"").trim();
+    if (!s) return null;
+    if (!/^https?:\/\//i.test(s)) s = "https://" + s;   // be forgiving about a missing scheme
+    try{
+      var u = new URL(s);
+      if (u.protocol !== "http:" && u.protocol !== "https:") return null;
+      return u.href;
+    }catch(e){ return null; }
+  }
+  function prettyHost(url){
+    try{ return new URL(url).hostname.replace(/^www\./,""); }catch(e){ return "link"; }
+  }
+
+  function renderJobBag(){
+    var heading=document.getElementById("jobbagHeading");
+    var teamSel=document.getElementById("jbTeamSelect");
+    var panel=document.getElementById("jobbagPanel");
+    var tk;
+
+    if (state.role==="admin"){
+      teamSel.style.display="";
+      teamSel.innerHTML="";
+      TEAM_ORDER.forEach(function(k){
+        var o=document.createElement("option"); o.value=k; o.textContent=state.teams[k].name;
+        if (k===ui.jobbagTeam) o.selected=true;
+        teamSel.appendChild(o);
+      });
+      teamSel.onchange=function(){ ui.jobbagTeam=teamSel.value; renderJobBag(); };
+      tk=ui.jobbagTeam;
+    } else {
+      teamSel.style.display="none";
+      tk=state.activeTeam;
+    }
+
+    var team=state.teams[tk];
+    heading.innerHTML=escapeHtml(team.name)+" job bag"+(state.role==="team"?" <span class='lock-hint'>🔒 Other teams hidden</span>":"");
+
+    panel.innerHTML="";
+    var wrap=document.createElement("div"); wrap.className="jb-panel";
+    panel.appendChild(wrap);
+
+    if (isLocked(tk)){ renderLockScreen(wrap, tk); return; }
+
+    var editable=canManageTeam(tk);
+
+    if (editable){
+      var form=document.createElement("div"); form.className="jb-form";
+      var phaseOpts=PHASES.map(function(p){ return '<option value="'+p.id+'">'+escapeHtml(p.name)+'</option>'; }).join("");
+      var whoOpts='<option value="">Added by…</option>'+team.roster.map(function(s){
+        var n=s.name||s.role; return '<option value="'+escapeHtml(n)+'">'+escapeHtml(n)+'</option>';
+      }).join("");
+      form.innerHTML=
+        '<input id="jbTitle" type="text" placeholder="What is it? e.g. Strategy deck v2">'+
+        '<input id="jbUrl" type="url" placeholder="Paste Google Drive / Figma / Canva link">'+
+        '<select id="jbPhase">'+phaseOpts+'</select>'+
+        '<select id="jbWho">'+whoOpts+'</select>'+
+        '<button class="jb-add" id="jbAdd">Add to bag</button>';
+      wrap.appendChild(form);
+      var err=document.createElement("p"); err.className="jb-err"; err.id="jbErr"; err.style.display="none";
+      wrap.appendChild(err);
+
+      form.querySelector("#jbAdd").addEventListener("click",function(){
+        var title=form.querySelector("#jbTitle").value.trim();
+        var url=safeUrl(form.querySelector("#jbUrl").value);
+        if (!title){ err.textContent="Give it a name so the team knows what it is."; err.style.display=""; return; }
+        if (!url){ err.textContent="That doesn't look like a valid web link — paste the full URL."; err.style.display=""; return; }
+        err.style.display="none";
+        team.jobbag.push({
+          id:"jb"+Date.now()+Math.floor(Math.random()*1000),
+          title:title, url:url,
+          phase:form.querySelector("#jbPhase").value,
+          who:form.querySelector("#jbWho").value,
+          ts:Date.now()
+        });
+        logActivity(tk,'Added "'+title+'" to the job bag');
+        saveState(); render();
+      });
+    }
+
+    if (!team.jobbag.length){
+      var empty=document.createElement("p"); empty.className="jb-empty";
+      empty.textContent = editable
+        ? "Nothing in the bag yet — add your first link above."
+        : "This team hasn't added anything to their job bag yet.";
+      wrap.appendChild(empty);
+      return;
+    }
+
+    PHASES.forEach(function(p){
+      var items=team.jobbag.filter(function(it){ return it.phase===p.id; })
+                           .sort(function(a,b){ return b.ts-a.ts; });
+      if (!items.length) return;
+      var g=document.createElement("div"); g.className="jb-group";
+      var h=document.createElement("p"); h.className="jb-group-h"; h.textContent=p.name+" · "+items.length;
+      g.appendChild(h);
+      items.forEach(function(it){
+        var row=document.createElement("div"); row.className="jb-item";
+        var when=new Date(it.ts).toLocaleDateString(undefined,{month:"short",day:"numeric"});
+        var meta=prettyHost(it.url)+" · added "+when+(it.who?" by "+it.who:"");
+        var main=document.createElement("div"); main.className="jb-main";
+        main.innerHTML='<p class="jb-title">'+escapeHtml(it.title)+'</p><p class="jb-meta">'+escapeHtml(meta)+'</p>';
+        row.appendChild(main);
+        var a=document.createElement("a"); a.className="jb-open"; a.href=it.url;
+        a.target="_blank"; a.rel="noopener noreferrer"; a.textContent="Open ↗";
+        row.appendChild(a);
+        if (editable){
+          var del=document.createElement("button"); del.className="jb-del"; del.title="Remove from bag"; del.textContent="✕";
+          del.addEventListener("click",function(){
+            if (!window.confirm('Remove "'+it.title+'" from the job bag? The file itself is not deleted.')) return;
+            team.jobbag=team.jobbag.filter(function(x){ return x.id!==it.id; });
+            logActivity(tk,'Removed "'+it.title+'" from the job bag');
+            saveState(); render();
+          });
+          row.appendChild(del);
+        }
+        g.appendChild(row);
+      });
+      wrap.appendChild(g);
+    });
   }
 
   /* ---------------- Attendance PDF export (admin only) ----------------
@@ -1298,6 +1465,7 @@
     renderActivity();
     renderPerformers();
     renderAttendance();
+    renderJobBag();
   }
 
   /* ---------------- Static wiring ---------------- */
