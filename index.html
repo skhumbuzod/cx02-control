@@ -445,13 +445,41 @@
      Change this string to whatever you want the admin passcode to be, then re-upload.
      Note: like the team PINs, this is a courtesy lock, not real security — anyone who
      views the page source can read it. It stops casual snooping between teams, nothing more. */
-  var ADMIN_PIN = "cx02admin";
-  var ADMIN_UNLOCK_KEY = "cx02ControlAdminUnlocked.v1";
-  function adminUnlockedOnThisDevice(){
-    try{ return localStorage.getItem(ADMIN_UNLOCK_KEY) === "yes"; }catch(e){ return false; }
+  // Each admin has their own passcode, so the name on an action actually means something.
+  var ADMIN_PINS = { "Admin 1":"cx02admin1", "Admin 2":"cx02admin2" };
+  var ADMIN_UNLOCK_KEY = "cx02ControlAdminUnlocked.v2";
+
+  // Returns the admin name this device has unlocked, or null.
+  function unlockedAdmin(){
+    try{
+      var v = localStorage.getItem(ADMIN_UNLOCK_KEY);
+      return (v && ADMIN_PINS.hasOwnProperty(v)) ? v : null;
+    }catch(e){ return null; }
   }
-  function setAdminUnlocked(v){
-    try{ v ? localStorage.setItem(ADMIN_UNLOCK_KEY,"yes") : localStorage.removeItem(ADMIN_UNLOCK_KEY); }catch(e){}
+  function setUnlockedAdmin(name){
+    try{ name ? localStorage.setItem(ADMIN_UNLOCK_KEY,name) : localStorage.removeItem(ADMIN_UNLOCK_KEY); }catch(e){}
+  }
+  function adminUnlockedOnThisDevice(){ return unlockedAdmin() !== null; }
+
+  // Prompts for a passcode. If `want` is given, only that admin's code is accepted.
+  // Returns the admin name on success, null if cancelled or wrong.
+  function askAdminPin(want){
+    var label = want
+      ? "Enter the passcode for "+want+":"
+      : "Admin view shows every team's board, attendance and reports.\nEnter your admin passcode:";
+    var entry = window.prompt(label, "");
+    if (entry===null) return null;                       // cancelled
+    entry = entry.trim();
+    var match = null;
+    Object.keys(ADMIN_PINS).forEach(function(name){
+      if (entry === ADMIN_PINS[name] && (!want || want===name)) match = name;
+    });
+    if (!match){
+      window.alert(want ? "That's not "+want+"'s passcode." : "That passcode isn't right — staying in Team view.");
+      return null;
+    }
+    setUnlockedAdmin(match);
+    return match;
   }
 
   /* ---------------- Optional real-time sync (Firebase) ----------------
@@ -687,6 +715,8 @@
   // Anyone whose browser still has role:"admin" saved from before the passcode existed
   // gets dropped back to Team view until they enter it.
   if (state.role==="admin" && !adminUnlockedOnThisDevice()) state.role="team";
+  // keep the displayed identity honest: you are whichever admin this device unlocked
+  if (state.role==="admin" && unlockedAdmin()) state.activeAdmin = unlockedAdmin();
 
   // QR-code deep link support: ?team=team2 opens straight into that team's board in Team mode.
   (function applyUrlParams(){
@@ -828,9 +858,18 @@
     document.querySelectorAll("#roleSeg button").forEach(function(b){ b.classList.toggle("active", b.dataset.role===state.role); });
     var ctx=document.getElementById("ctxChips"); ctx.innerHTML="";
     if (state.role==="admin"){
-      ["Admin 1","Admin 2"].forEach(function(name){
-        var b=document.createElement("button"); b.className="chip"+(state.activeAdmin===name?" active":""); b.textContent=name;
-        b.addEventListener("click",function(){ state.activeAdmin=name; saveState(); render(); });
+      var mine = unlockedAdmin();
+      Object.keys(ADMIN_PINS).forEach(function(name){
+        var b=document.createElement("button");
+        var isMe = state.activeAdmin===name;
+        b.className="chip"+(isMe?" active":"");
+        b.textContent = name + (name===mine ? "" : " 🔒");
+        b.title = name===mine ? "You are signed in as "+name : "Needs "+name+"'s passcode";
+        b.addEventListener("click",function(){
+          if (name===unlockedAdmin()){ state.activeAdmin=name; saveState(); render(); return; }
+          // switching to the other admin requires their own passcode
+          if (askAdminPin(name)===name){ state.activeAdmin=name; saveState(); render(); }
+        });
         ctx.appendChild(b);
       });
     } else {
@@ -1740,14 +1779,10 @@
   document.getElementById("roleSeg").addEventListener("click",function(e){
     var b=e.target.closest("button[data-role]"); if(!b) return;
     var wanted=b.dataset.role;
-    if (wanted==="admin" && !adminUnlockedOnThisDevice()){
-      var entry=window.prompt("Admin view shows every team's board and attendance.\nEnter the admin passcode to continue:","");
-      if (entry===null) return;                       // cancelled — stay where they are
-      if (entry.trim() !== ADMIN_PIN){
-        window.alert("That passcode isn't right — staying in Team view.");
-        return;
-      }
-      setAdminUnlocked(true);                          // remember on this device only
+    if (wanted==="admin"){
+      var who = unlockedAdmin() || askAdminPin(null);
+      if (!who) return;                                // cancelled or wrong — stay in Team view
+      state.activeAdmin = who;                         // you are whoever the passcode belongs to
     }
     state.role=wanted; saveState(); render();
   });
