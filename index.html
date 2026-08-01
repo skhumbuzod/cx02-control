@@ -278,6 +278,32 @@
   .jb-del:hover{color:var(--absent);}
   .jb-empty{font-size:12px;color:var(--ink-dim);padding:18px 0;text-align:center;}
   @media(max-width:900px){ .jb-form{grid-template-columns:1fr;} }
+
+  /* ---- Reports ---- */
+  .rp-caveat{font-size:11px;color:var(--ink-dim);margin:6px 0 0;max-width:760px;line-height:1.5;}
+  .rp-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;}
+  @media(max-width:1100px){ .rp-grid{grid-template-columns:1fr;} }
+  .rp-card{background:var(--card);border-radius:var(--r-lg);padding:18px 20px;}
+  .rp-team{font-size:15px;font-weight:700;margin:0 0 2px;display:flex;align-items:center;gap:8px;}
+  .rp-dot{width:9px;height:9px;border-radius:50%;flex:none;}
+  .rp-sub{font-size:11px;color:var(--ink-dim);margin:0 0 14px;}
+  .rp-flag{border-radius:10px;padding:9px 11px;font-size:11.5px;line-height:1.45;margin-bottom:12px;}
+  .rp-flag.ok{background:#e8f3ec;color:#2f6a45;}
+  .rp-flag.warn{background:#fdf0e2;color:#94571c;}
+  .rp-flag.bad{background:#fbe9e7;color:#a33527;}
+  .rp-metric{display:flex;justify-content:space-between;align-items:baseline;gap:10px;
+    padding:8px 0;border-bottom:1px solid var(--line);}
+  .rp-metric:last-child{border-bottom:none;}
+  .rp-k{font-size:11.5px;color:var(--ink-soft);}
+  .rp-v{font-size:13px;font-weight:700;white-space:nowrap;}
+  .rp-v small{font-weight:500;font-size:10.5px;color:var(--ink-dim);}
+  .rp-sec{font-size:9.5px;font-weight:700;letter-spacing:1.3px;text-transform:uppercase;
+    color:var(--ink-dim);margin:16px 0 4px;}
+  .rp-people{margin-top:4px;}
+  .rp-person{display:flex;justify-content:space-between;font-size:11.5px;padding:4px 0;}
+  .rp-person span:last-child{font-variant-numeric:tabular-nums;color:var(--ink-soft);}
+  .rp-bar{height:5px;border-radius:99px;background:var(--line);overflow:hidden;margin-top:6px;}
+  .rp-bar i{display:block;height:100%;border-radius:99px;}
   .att-cell{text-align:center!important;}
   .att-btn{border:1px solid var(--line-2);background:#fff;color:var(--ink-dim);font-size:10.5px;font-weight:700;width:34px;height:26px;border-radius:7px;}
   .att-btn.present{background:var(--done-soft);color:var(--done);border-color:transparent;}
@@ -301,6 +327,7 @@
         <a href="#" class="on" data-view="board">Dashboard</a>
         <a href="#" data-view="attendance">Attendance</a>
         <a href="#" data-view="jobbag">Job bag</a>
+        <a href="#" data-view="reports" id="reportsTab" style="display:none">Reports</a>
       </div>
       <div class="members"><span>18 members · 3 teams</span></div>
     </div>
@@ -392,6 +419,15 @@
         <select class="pill-select" id="jbTeamSelect" style="display:none"></select>
       </div>
       <div id="jobbagPanel" style="margin-top:14px"></div>
+    </div>
+
+    <div id="reportsView" style="display:none">
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap">
+        <h3 class="section-title">Team reports</h3>
+        <button class="ghost" id="rpPdfBtn">⤓ Download PDF</button>
+      </div>
+      <p class="rp-caveat">Measures activity in this tool only — not effort or quality. Most real work happens in Drive, Figma and conversation. Use it to spot who needs a chat, not to grade.</p>
+      <div id="reportsPanel" style="margin-top:14px"></div>
     </div>
 
     <p class="foot" id="syncFoot">CX02 Control · set a per-team PIN to keep boards private on shared devices</p>
@@ -1155,6 +1191,7 @@
     document.getElementById("dashboardView").style.display = ui.view==="board" ? "" : "none";
     document.getElementById("attendanceView").style.display = ui.view==="attendance" ? "" : "none";
     document.getElementById("jobbagView").style.display = ui.view==="jobbag" ? "" : "none";
+    document.getElementById("reportsView").style.display = ui.view==="reports" ? "" : "none";
   }
 
   /* ---------------- Job bag ----------------
@@ -1282,6 +1319,233 @@
       });
       wrap.appendChild(g);
     });
+  }
+
+  /* ---------------- Team reports (admin only) ----------------
+     Everything here is derived from the activity log, which is a full timestamped
+     audit trail. The live board only subscribes to the latest 30 entries, so the
+     reports pull the whole collection once, on demand. */
+
+  var DAY = 86400000;
+  var fullLog = null;        // cached full activity history
+  var fullLogState = "idle"; // idle | loading | ready | error
+
+  function loadFullLog(cb){
+    if (fullLogState==="ready") return cb(fullLog);
+    if (fullLogState==="loading") return;
+    fullLogState="loading";
+    if (!FIREBASE_READY){                       // local-only mode: use what we have
+      fullLog = (state.activity||[]).slice(); fullLogState="ready"; return cb(fullLog);
+    }
+    db.collection("activity").orderBy("ts","asc").get().then(function(snap){
+      fullLog = snap.docs.map(function(d){ return d.data(); });
+      fullLogState="ready"; cb(fullLog);
+    }).catch(function(e){
+      console.warn("Report log fetch failed", e);
+      fullLog = (state.activity||[]).slice(); fullLogState="error"; cb(fullLog);
+    });
+  }
+
+  function sortedMilestones(){
+    return MILESTONES.slice().sort(function(a,b){ return a.end-b.end; });
+  }
+  // The deadline a given moment was working towards.
+  function nextDeadlineAfter(ts){
+    var ms = sortedMilestones();
+    for (var i=0;i<ms.length;i++){ if (ms[i].end >= ts) return ms[i]; }
+    return null;
+  }
+  function median(arr){
+    if (!arr.length) return null;
+    var a=arr.slice().sort(function(x,y){ return x-y; }), m=Math.floor(a.length/2);
+    return a.length%2 ? a[m] : (a[m-1]+a[m])/2;
+  }
+
+  function computeTeamReport(tk, log){
+    var team = state.teams[tk];
+    var now = Date.now();
+    var events = log.filter(function(e){ return e && e.team===tk; });
+    var r = { team:team, events:events.length };
+
+    /* --- Silence / early warning --- */
+    var lastTs = events.length ? Math.max.apply(null, events.map(function(e){ return e.ts||0; })) : 0;
+    r.daysQuiet = lastTs ? Math.floor((now-lastTs)/DAY) : null;
+    var upcoming = sortedMilestones().filter(function(m){ return m.end>=now; })[0] || null;
+    r.nextMilestone = upcoming;
+    r.daysToNext = upcoming ? Math.ceil((upcoming.end-now)/DAY) : null;
+    if (!events.length){ r.risk="bad"; r.riskText="No activity recorded at all."; }
+    else if (r.daysQuiet>=3 && r.daysToNext!==null && r.daysToNext<=5){
+      r.risk="bad";
+      r.riskText="Quiet "+r.daysQuiet+" days with "+r.nextMilestone.title+" in "+r.daysToNext+" days.";
+    } else if (r.daysQuiet>=5){
+      r.risk="warn"; r.riskText="No activity for "+r.daysQuiet+" days.";
+    } else {
+      r.risk="ok";
+      r.riskText = r.daysQuiet===0 ? "Active today." : "Active "+r.daysQuiet+" day"+(r.daysQuiet===1?"":"s")+" ago.";
+    }
+
+    /* --- Work rhythm: how close to the deadline the work happens --- */
+    var leads=[], crunch=0;
+    events.forEach(function(e){
+      var m = nextDeadlineAfter(e.ts); if (!m) return;
+      var lead = (m.end - e.ts)/DAY;
+      leads.push(lead);
+      if (lead <= 1) crunch++;
+    });
+    r.medianLead = median(leads);
+    r.crunchPct = leads.length ? Math.round(crunch/leads.length*100) : null;
+    r.activeDays = (function(){
+      var set={}; events.forEach(function(e){ set[new Date(e.ts).toDateString()]=1; });
+      return Object.keys(set).length;
+    })();
+
+    /* --- Attendance (sessions that have already happened) --- */
+    var past = MILESTONES.filter(function(m){ return m.start<=now; });
+    var per = team.roster.map(function(s){ return {name:s.name||s.role, present:0, late:0, absent:0, blank:0}; });
+    past.forEach(function(m){
+      var row = team.attendance[m.id]||[];
+      per.forEach(function(p,i){
+        var v=row[i];
+        if (v==="present") p.present++; else if (v==="late") p.late++;
+        else if (v==="absent") p.absent++; else p.blank++;
+      });
+    });
+    r.people = per;
+    r.sessionsSoFar = past.length;
+    var totalMarks = per.reduce(function(a,p){ return a+p.present+p.late+p.absent; },0);
+    var totalSlots = past.length*team.roster.length;
+    r.markedPct = totalSlots ? Math.round(totalMarks/totalSlots*100) : 0;
+    var pres = per.reduce(function(a,p){ return a+p.present; },0);
+    var lateN = per.reduce(function(a,p){ return a+p.late; },0);
+    r.presentPct = totalMarks ? Math.round(pres/totalMarks*100) : null;
+    r.latePct = totalMarks ? Math.round(lateN/totalMarks*100) : null;
+
+    /* --- Pace vs schedule --- */
+    var totalAll=0, totalDone=0, active=0;
+    MILESTONES.forEach(function(m){
+      totalAll += m.checklist.length;
+      var cl = team.checklist[m.id]||[];
+      totalDone += cl.filter(Boolean).length;
+      if (team.status[m.id]==="in-progress" || team.status[m.id]==="in-review") active++;
+    });
+    r.completion = totalAll ? Math.round((totalDone + active*0.4)/totalAll*100) : 0;
+    var span = PROJECT_END-PROJECT_START;
+    var elapsed = Math.min(Math.max(now-PROJECT_START,0), span);
+    r.expectedPct = span>0 ? Math.round(elapsed/span*100) : 0;
+    r.paceDelta = r.completion - r.expectedPct;
+
+    /* --- Cycle time: in-progress -> done, from the status-move events --- */
+    var startedAt={}, cycles=[];
+    events.forEach(function(e){
+      var m=/^Moved "(.+)" from (.+) to (.+)$/.exec(e.text||""); if(!m) return;
+      var title=m[1], to=m[3];
+      if (to==="In progress" && !startedAt[title]) startedAt[title]=e.ts;
+      if (to==="Done" && startedAt[title]){ cycles.push(e.ts-startedAt[title]); delete startedAt[title]; }
+    });
+    r.medianCycleDays = cycles.length ? +(median(cycles)/DAY).toFixed(1) : null;
+    r.completedCount = cycles.length;
+
+    /* --- Job bag discipline --- */
+    r.jobbagCount = (team.jobbag||[]).length;
+    return r;
+  }
+
+  function renderReports(){
+    var tab=document.getElementById("reportsTab");
+    if (tab) tab.style.display = state.role==="admin" ? "" : "none";
+    if (state.role!=="admin"){
+      if (ui.view==="reports") ui.view="board";   // teams can never sit on this view
+      return;
+    }
+    if (ui.view!=="reports") return;
+
+    var panel=document.getElementById("reportsPanel");
+    loadFullLog(function(log){
+      panel.innerHTML="";
+      var grid=document.createElement("div"); grid.className="rp-grid";
+      TEAM_ORDER.forEach(function(tk){
+        var r=computeTeamReport(tk, log);
+        var card=document.createElement("div"); card.className="rp-card";
+        var lead = r.medianLead===null ? "—" : (r.medianLead>=1 ? r.medianLead.toFixed(1)+" days" : Math.round(r.medianLead*24)+" hrs");
+        var paceTxt = (r.paceDelta>0?"+":"")+r.paceDelta+" pts";
+        var paceWord = Math.abs(r.paceDelta)<=5 ? "on pace" : (r.paceDelta>0?"ahead":"behind");
+
+        card.innerHTML =
+          '<p class="rp-team"><span class="rp-dot" style="background:'+TEAM_COLORS[tk]+'"></span>'+escapeHtml(r.team.name)+'</p>'+
+          '<p class="rp-sub">'+r.events+' logged actions · active on '+r.activeDays+' separate days</p>'+
+          '<div class="rp-flag '+r.risk+'">'+escapeHtml(r.riskText)+'</div>'+
+
+          '<p class="rp-sec">Work rhythm</p>'+
+          '<div class="rp-metric"><span class="rp-k">Typical lead time before a deadline</span><span class="rp-v">'+lead+'</span></div>'+
+          '<div class="rp-metric"><span class="rp-k">Activity in the final 24 hrs</span><span class="rp-v">'+(r.crunchPct===null?"—":r.crunchPct+"%")+'</span></div>'+
+
+          '<p class="rp-sec">Pace &amp; delivery</p>'+
+          '<div class="rp-metric"><span class="rp-k">Completion vs schedule</span><span class="rp-v">'+r.completion+'% <small>vs '+r.expectedPct+'% · '+paceTxt+' '+paceWord+'</small></span></div>'+
+          '<div class="rp-metric"><span class="rp-k">Median time to finish a milestone</span><span class="rp-v">'+(r.medianCycleDays===null?"—":r.medianCycleDays+" days")+' <small>'+r.completedCount+' done</small></span></div>'+
+          '<div class="rp-metric"><span class="rp-k">Items in job bag</span><span class="rp-v">'+r.jobbagCount+'</span></div>'+
+
+          '<p class="rp-sec">Attendance · '+r.sessionsSoFar+' sessions so far</p>'+
+          '<div class="rp-metric"><span class="rp-k">Register filled in</span><span class="rp-v">'+r.markedPct+'%</span></div>'+
+          '<div class="rp-bar"><i style="width:'+r.markedPct+'%;background:'+TEAM_COLORS[tk]+'"></i></div>'+
+          '<div class="rp-people">'+
+            r.people.map(function(p){
+              return '<div class="rp-person"><span>'+escapeHtml(p.name)+'</span><span>'+
+                     p.present+'P · '+p.late+'L · '+p.absent+'A</span></div>';
+            }).join("")+
+          '</div>';
+        grid.appendChild(card);
+      });
+      panel.appendChild(grid);
+      if (fullLogState==="error"){
+        var w=document.createElement("p"); w.className="rp-caveat";
+        w.textContent="Couldn't load the full history — showing only recent activity, so rhythm figures may be understated.";
+        panel.appendChild(w);
+      }
+    });
+  }
+
+  function reportsExportHtml(){
+    var generated=new Date().toLocaleString(undefined,{dateStyle:"long",timeStyle:"short"});
+    var css="@page{size:A4 portrait;margin:16mm}body{font-family:Arial,Helvetica,sans-serif;color:#1c1c1c;margin:0}"
+      +"h1{font-size:17px;margin:0 0 2px}h2{font-size:14px;margin:0 0 6px}"
+      +".meta{font-size:10px;color:#666;margin:0 0 6px}"
+      +".cav{font-size:9.5px;color:#666;font-style:italic;margin:0 0 16px;line-height:1.5}"
+      +"section{border:1px solid #ccc;border-radius:6px;padding:12px 14px;margin-bottom:12px;page-break-inside:avoid}"
+      +"table{border-collapse:collapse;width:100%;font-size:10px;margin-top:4px}"
+      +"td{padding:3px 0;border-bottom:1px solid #eee}td:last-child{text-align:right;font-weight:bold}"
+      +".flag{font-size:10.5px;padding:6px 8px;border-radius:4px;margin:6px 0}"
+      +".ok{background:#e8f3ec}.warn{background:#fdf0e2}.bad{background:#fbe9e7}"
+      +".ppl{font-size:9.5px;color:#444;margin-top:6px}";
+    var body="";
+    TEAM_ORDER.forEach(function(tk){
+      var r=computeTeamReport(tk, fullLog||[]);
+      var lead = r.medianLead===null ? "—" : (r.medianLead>=1 ? r.medianLead.toFixed(1)+" days" : Math.round(r.medianLead*24)+" hrs");
+      body += "<section><h2>"+escapeHtml(r.team.name)+"</h2>"
+        + "<div class='flag "+r.risk+"'>"+escapeHtml(r.riskText)+"</div><table>"
+        + "<tr><td>Logged actions / active days</td><td>"+r.events+" / "+r.activeDays+"</td></tr>"
+        + "<tr><td>Typical lead time before a deadline</td><td>"+lead+"</td></tr>"
+        + "<tr><td>Activity in the final 24 hrs</td><td>"+(r.crunchPct===null?"—":r.crunchPct+"%")+"</td></tr>"
+        + "<tr><td>Completion vs schedule</td><td>"+r.completion+"% vs "+r.expectedPct+"%</td></tr>"
+        + "<tr><td>Median time to finish a milestone</td><td>"+(r.medianCycleDays===null?"—":r.medianCycleDays+" days")+"</td></tr>"
+        + "<tr><td>Register filled in ("+r.sessionsSoFar+" sessions)</td><td>"+r.markedPct+"%</td></tr>"
+        + "<tr><td>Items in job bag</td><td>"+r.jobbagCount+"</td></tr>"
+        + "</table><p class='ppl'>"
+        + r.people.map(function(p){ return escapeHtml(p.name)+": "+p.present+"P/"+p.late+"L/"+p.absent+"A"; }).join(" &nbsp;·&nbsp; ")
+        + "</p></section>";
+    });
+    return "<!doctype html><html><head><meta charset='utf-8'><title>CX02 Team Reports</title><style>"+css+"</style></head><body>"
+      + "<h1>CX02 Crossover Challenge — Team Reports</h1>"
+      + "<p class='meta'>Generated "+escapeHtml(generated)+"</p>"
+      + "<p class='cav'>Measures activity in the CX02 Control tool only — not effort or quality. Most work happens in Drive, Figma and conversation, and the tool cannot attribute actions to individual students. Intended to surface teams worth checking in with, not as a grading input.</p>"
+      + body + "</body></html>";
+  }
+
+  function downloadReportsPdf(){
+    if (state.role!=="admin") return;
+    var w=window.open("","_blank");
+    if (!w){ window.alert("Your browser blocked the export window. Allow pop-ups for this site and try again."); return; }
+    w.document.open(); w.document.write(reportsExportHtml()); w.document.close();
+    setTimeout(function(){ try{ w.focus(); w.print(); }catch(e){} }, 400);
   }
 
   /* ---------------- Attendance PDF export (admin only) ----------------
@@ -1466,6 +1730,7 @@
     renderPerformers();
     renderAttendance();
     renderJobBag();
+    renderReports();
   }
 
   /* ---------------- Static wiring ---------------- */
@@ -1491,6 +1756,7 @@
      would destroy every team's progress for everyone at once. A reset can still be performed
      deliberately from the Firebase console if one is ever genuinely needed. */
   document.getElementById("attPdfBtn").addEventListener("click", downloadAttendancePdf);
+  document.getElementById("rpPdfBtn").addEventListener("click", downloadReportsPdf);
   document.getElementById("rateGo").addEventListener("click",function(){ document.getElementById("gateStrip").scrollIntoView({behavior:"smooth"}); });
   document.getElementById("heroCta").addEventListener("click",function(){ document.getElementById("gateStrip").scrollIntoView({behavior:"smooth"}); });
 
