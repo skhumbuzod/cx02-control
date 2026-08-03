@@ -295,6 +295,9 @@
   .att-table th{font-family:var(--font);font-weight:600;color:var(--ink-soft);font-size:10.5px;text-transform:uppercase;letter-spacing:.4px;}
   .att-session{display:block;font-weight:600;color:var(--ink);}
   .att-date{display:block;font-size:10.5px;color:var(--ink-dim);font-weight:700;}
+  .card-brief{font-size:11.5px;line-height:1.55;color:var(--ink-soft);margin:0 0 10px;
+    padding:10px 12px;background:var(--panel-2);border-left:2px solid var(--teal);border-radius:0 8px 8px 0;}
+
   .att-working{background:rgba(0,0,0,0.012);}
   .att-session.plain{font-weight:500;color:var(--ink-soft);}
 
@@ -567,38 +570,55 @@
   // "Hand-in Document" was replaced by "Submit Presentation & Report" (Fri 18 Sep) per the updated slide.
   var MILESTONES = [
     { id:"m1", title:"Brand & Category Research", phase:"p1", start:D(2026,7,21), end:D(2026,7,30), time:"MAC starts Tue 21 Jul",
+      brief:"MAC's head start, before UCD joins. Build the foundation: who the brand is, what category it competes in, and what the competitive landscape looks like.",
       checklist:["Category & competitor scan complete","Brand audit documented","Key findings logged for the team"] },
     { id:"m2", title:"Project Brief & UCD Kickoff", phase:"p1", start:D(2026,7,21), end:D(2026,7,21), time:null,
+      brief:"UCD joins MAC and the project brief is issued. The combined team of six confirms who holds which role.",
       checklist:["Project brief received","UCD teammates onboarded","All 6 roles confirmed"] },
     { id:"m3", title:"Client Brief", phase:"p1", start:D(2026,7,23), end:D(2026,7,23), time:null,
+      brief:"The client presents the brief in person. Your one chance to hear it first-hand \u2014 capture the requirements, constraints, budget and timing while you have them in the room.",
       checklist:["Attend client brief session","Log key requirements","Confirm budget & timing","Identify internal leads"] },
     { id:"m4", title:"Insight Presentation", phase:"p2", start:D(2026,7,30), end:D(2026,7,30), time:null,
+      brief:"Show the client you have understood them. Your interpretation of the brief, findings to date, your research objectives and plan, and the questions you need answered before strategy can lock.",
       checklist:["Interpretation of the brief","Findings to date","Research objectives & plan","Questions ready for the Client Q&A"] },
     { id:"m5", title:"Client Q&A Session", phase:"p2", start:D(2026,8,4), end:D(2026,8,4), time:null,
+      brief:"The client answers the questions raised at Insight. Use it to close the gaps in your understanding \u2014 this is the last easy chance to ask.",
       checklist:["Align on brief interpretation","Confirm scope changes","Sign-off from client contact"] },
     { id:"m6", title:"Strategy Review", phase:"p2", start:D(2026,8,8), end:D(2026,8,8), time:"marked · + optional session Thu 13 Aug",
+      brief:"Marked. Macro factors, target market summary, your insights, the strategic solution, and the Get-To-By that every piece of creative work will hang off.",
       checklist:["Overview of macro factors","Summary of target marketing","Insights presented","Strategic solution outlined","Get-To-By defined"] },
     { id:"m7", title:"Creative Brief", phase:"p2", start:D(2026,8,18), end:D(2026,8,18), time:null,
+      brief:"A one-page Creative Brief presenting your marketing strategy in an inspiring and creative way. One page \u2014 the compression is the discipline.",
       checklist:["One-pager Creative Brief drafted","Presents marketing strategy in an inspiring, creative way"] },
     { id:"m8", title:"Concept Review 1", phase:"p3", start:D(2026,8,22), end:D(2026,8,22), time:"marked",
+      brief:"Marked. Your Get-To-By (WHAT you want to say) plus five big ideas (HOW you will say it). Each idea needs a one-line working campaign name, two scamps (a print ad or poster plus one other touchpoint), a headline on each scamp, and a copy deck of at least five headline options.",
       checklist:["G-T-B presented (WHAT)","5 big ideas/concepts presented (HOW)","Each idea has a one-line working campaign name","Each idea scamped: print ad/poster + 1 other touchpoint","Each scamp has a headline/tagline","Copy deck with 5+ headline/tagline options"] },
     { id:"m9", title:"Concept Review 2", phase:"p3", start:D(2026,8,27), end:D(2026,8,27), time:null,
+      brief:"Your two strongest ideas developed further: three scamped executions each, a headline on every scamp, more copy options per execution, and a stylistic moodboard per idea covering type, layout, photography or illustration, and colour.",
       checklist:["Two strongest ideas selected","3 executions scamped per idea","Headline on every scamp","Copy deck with more options per execution","Stylistic moodboard per idea"] },
     { id:"m10", title:"Touchpoint Review", phase:"p4", start:D(2026,8,29), end:D(2026,8,29), time:null,
+      brief:"Tier-one questions. What does success look like for the brand? What do you want consumers to do? How do your touchpoints motivate that response, does the mix work synergistically, and how will you measure it \u2014 including budget and return on investment?",
       checklist:["Success definition for the brand articulated","Desired consumer action defined","Consumer journey phases mapped","Touchpoint mix justified strategically","Roll-out & phasing considered","Measurement approach & currencies defined","Budget & ROI considered"] },
     { id:"m11", title:"Craft Review 1", phase:"p4", start:D(2026,9,5), end:D(2026,9,5), time:null,
+      brief:"Present the media plan, plus three digitally executed touchpoints with final copy.",
       checklist:["Media plan presented","3 digitally executed touchpoints with final copy"] },
     { id:"m12", title:"Craft Review 2", phase:"p4", start:D(2026,9,10), end:D(2026,9,10), time:null,
+      brief:"At least half of your media touchpoints digitally executed and shown in situ.",
       checklist:["At least 50% of media touchpoints digitally executed","Executions presented in situ"] },
     { id:"m13", title:"Campus Immersion", phase:"p5", start:D(2026,9,16), end:D(2026,9,19), time:"Wed 10h00 start – Sat 14h00 end",
+      brief:"Everyone on campus. Four days to finish, rehearse and hand in.",
       checklist:["On-campus check-in complete","Immersion schedule reviewed","Team materials packed for campus"] },
     { id:"m14", title:"Internal Presentations · Day 1", phase:"p5", start:D(2026,9,17), end:D(2026,9,17), time:null,
+      brief:"A 15-minute presentation to lecturers for final feedback. A full dress rehearsal \u2014 present exactly as if the client were in the room. The Account Manager takes notes on the feedback.",
       checklist:["15-min dress-rehearsal presentation ready","Presented as if to the client","Account Manager logging lecturer feedback"] },
     { id:"m17", title:"Internal Presentations · Day 2", phase:"p5", start:D(2026,9,18), end:D(2026,9,18), time:"marked",
+      brief:"Marked. Second round, with Day 1 feedback actioned. Timing and running order locked.",
       checklist:["Feedback from Day 1 actioned","Final run-through delivered","Presentation timing locked"] },
     { id:"m16", title:"Client Presentations", phase:"p5", start:D(2026,9,19), end:D(2026,9,19), time:"marked · Tech check 8:30 · Client 9:30 · Present 10:00",
+      brief:"Marked. Technical checks 8:30\u20139:30. Be ready to greet the client at 9:30. 15-minute presentation plus 15 minutes of client feedback per team. Celebration on the Red & Yellow rooftop afterwards.",
       checklist:["Tech checks done 8:30–9:30am","Ready to greet client at 9:30am","15-min presentation + 15-min client feedback delivered","Celebrate on Red & Yellow rooftop"] },
     { id:"m15", title:"Submit Presentation & Report", phase:"p6", start:D(2026,9,18), end:D(2026,9,18), time:"marked",
+      brief:"Marked. All job bags up to date with supporting documents, final presentation ready, technical run-throughs in the Main Auditorium, and everything uploaded to Moodle.",
       checklist:["All job bags up to date","Final presentation ready","Report compiled and proofed","Presentation uploaded to Moodle","Final check-in with lecturers"] }
   ];
 
@@ -1127,6 +1147,7 @@
         });
         var it=document.createElement("div");
         it.className="tl-item"+(allDone?" is-done":(anyNow?" is-now":""));
+        if (m.brief) it.title=m.title+" — "+m.brief;   // hover for what the deliverable actually is
         it.innerHTML='<i></i><span><b>'+escapeHtml(m.title)+'</b><br><em>'+escapeHtml(fmtRange(m))+'</em></span>';
         col.appendChild(it);
       });
@@ -1306,6 +1327,12 @@
     card.appendChild(toggle);
 
     if (isOpen){
+      // what this deliverable actually is, straight from the CX02 briefing document
+      if (m.brief){
+        var note=document.createElement("p"); note.className="card-brief";
+        note.textContent=m.brief;
+        card.appendChild(note);
+      }
       var list=document.createElement("div"); list.className="checklist";
       m.checklist.forEach(function(text, idx){
         var done=t.checklist[m.id][idx];
