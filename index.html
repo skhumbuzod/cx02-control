@@ -158,8 +158,8 @@
     text-transform:uppercase;color:var(--orange);background:var(--panel);padding:0 4px;white-space:nowrap;}
 
   .tl-row{position:relative;height:46px;}
-  .tl-bar{position:absolute;top:5px;height:36px;min-width:152px;border-radius:99px;background:var(--sidebar);
-    display:flex;align-items:center;padding:0 16px;overflow:hidden;cursor:pointer;z-index:2;
+  .tl-bar{position:absolute;top:4px;height:38px;min-width:152px;border-radius:99px;background:var(--sidebar);
+    display:flex;align-items:center;padding:0 16px 9px;overflow:hidden;cursor:pointer;z-index:2;
     box-shadow:0 6px 16px -10px rgba(43,49,56,.7);transition:transform .15s ease;}
   .tl-bar:hover{transform:translateY(-1px);}
   .tl-bar.sel{outline:2px solid var(--orange);outline-offset:2px;}
@@ -169,6 +169,17 @@
     white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
   .tl-bar .tl-count{position:relative;z-index:1;margin-left:auto;padding-left:12px;font-size:10.5px;
     font-weight:600;color:rgba(255,255,255,.72);white-space:nowrap;}
+
+  /* milestone markers riding along the bottom of each pill */
+  .tl-dot{position:absolute;bottom:7px;width:6px;height:6px;border-radius:50%;z-index:2;
+    background:rgba(255,255,255,.34);transform:translateX(-50%);transition:transform .12s ease;}
+  .tl-dot:hover{transform:translateX(-50%) scale(1.6);}
+  .tl-dot.now{background:var(--orange);box-shadow:0 0 0 3px rgba(240,138,60,.28);}
+  .tl-dot.done{background:#fff;}
+  .tl-dot.key{width:9px;height:9px;bottom:5.5px;background:transparent;
+    border:1.5px solid rgba(255,255,255,.85);}
+  .tl-dot.key.done{background:#fff;border-color:#fff;}
+  .tl-dot.key.now{background:var(--orange);border-color:var(--orange);}
 
   .tl-axis{position:relative;height:20px;margin-top:6px;border-top:1px solid var(--line);}
   .tl-tick{position:absolute;top:5px;font-size:9.5px;color:var(--ink-dim);white-space:nowrap;transform:translateX(-50%);}
@@ -1014,6 +1025,8 @@
         '<span><i class="tl-key" style="background:linear-gradient(90deg,var(--teal),var(--teal-2))"></i>Cleared</span>'+
         '<span><i class="tl-key" style="background:var(--sidebar)"></i>Remaining</span>'+
         '<span><i class="tl-key" style="background:var(--orange)"></i>Today</span>'+
+        '<span><i style="width:6px;height:6px;border-radius:50%;background:var(--ink-dim);flex:none"></i>Milestone</span>'+
+        '<span><i style="width:9px;height:9px;border-radius:50%;border:1.5px solid var(--ink-soft);flex:none"></i>Marked</span>'+
       '</div>';
     host.appendChild(head);
 
@@ -1045,9 +1058,28 @@
         bar.style.left=left+"%"; bar.style.width=width+"%";
       }
       bar.title=r.ph.name+" · "+fmtDate(r.start)+" – "+fmtDate(r.end);
+      // one marker per milestone, placed where it falls inside the phase.
+      // inset 9% each side so markers never sit under the pill's rounded ends.
+      var phSpan = r.end - r.start, lastLeft = -99;
+      var dots = r.ms.slice().sort(function(a,b){ return a.start-b.start; }).map(function(m){
+        var frac = phSpan>0 ? (m.start-r.start)/phSpan : 0.5;
+        var allDone = teams.every(function(tk){ return state.teams[tk].status[m.id]==="done"; });
+        var anyNow  = teams.some(function(tk){
+          var st=state.teams[tk].status[m.id]; return st==="in-progress"||st==="in-review";
+        });
+        var isKey = /marked/i.test(m.time||"");          // assessed gates from the brief
+        var cls = "tl-dot"+(allDone?" done":(anyNow?" now":""))+(isKey?" key":"");
+        var tip = m.title+" · "+fmtRange(m)+(isKey?" · marked":"")+
+                  " · "+(allDone?"done":(anyNow?"in progress":"not started"));
+        // milestones sharing a date would stack exactly — nudge them apart so both stay readable
+        var lf = 9 + frac*82;
+        if (lf - lastLeft < 3.4) lf = lastLeft + 3.4;
+        lastLeft = lf;
+        return '<i class="'+cls+'" style="left:'+lf+'%" title="'+escapeHtml(tip)+'"></i>';
+      }).join("");
       bar.innerHTML='<span class="tl-fill" style="width:'+r.pct+'%"></span>'+
                     '<span class="tl-label">'+escapeHtml(r.ph.name)+'</span>'+
-                    '<span class="tl-count">'+r.done+'/'+r.total+'</span>';
+                    '<span class="tl-count">'+r.done+'/'+r.total+'</span>'+dots;
       bar.addEventListener("click",function(){
         ui.phase = (ui.phase===r.ph.id) ? "all" : r.ph.id;   // click to filter, click again to clear
         render();
