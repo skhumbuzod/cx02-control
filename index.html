@@ -151,14 +151,14 @@
 
   .tl-scroll{overflow-x:auto;padding-bottom:4px;}
   .tl-inner{min-width:720px;position:relative;}
-  .tl-chart{position:relative;}
+  .tl-chart{position:relative;margin-top:16px;}
   .tl-gridline{position:absolute;top:0;bottom:0;width:0;border-left:1px dashed var(--line-2);}
   .tl-today{position:absolute;top:0;bottom:0;width:0;border-left:2px solid var(--orange);z-index:3;}
   .tl-today b{position:absolute;top:-7px;left:6px;font-size:9px;font-weight:700;letter-spacing:0.8px;
     text-transform:uppercase;color:var(--orange);background:var(--panel);padding:0 4px;white-space:nowrap;}
 
   .tl-row{position:relative;height:46px;}
-  .tl-bar{position:absolute;top:5px;height:36px;min-width:132px;border-radius:99px;background:var(--sidebar);
+  .tl-bar{position:absolute;top:5px;height:36px;min-width:152px;border-radius:99px;background:var(--sidebar);
     display:flex;align-items:center;padding:0 16px;overflow:hidden;cursor:pointer;z-index:2;
     box-shadow:0 6px 16px -10px rgba(43,49,56,.7);transition:transform .15s ease;}
   .tl-bar:hover{transform:translateY(-1px);}
@@ -1074,6 +1074,7 @@
       seen[k]=1; lastAt=at;
       var tick=document.createElement("span"); tick.className="tl-tick";
       tick.style.left=at+"%"; tick.textContent=k;
+      if (at < 3) tick.style.transform="translateX(0)";   // first label sits flush, not half off-canvas
       axis.appendChild(tick);
     });
     var endTick=document.createElement("span"); endTick.className="tl-tick";
