@@ -140,16 +140,48 @@
   .ghost{border:1px solid var(--line-2);background:transparent;color:var(--ink-dim);font-size:11.5px;padding:7px 12px;border-radius:999px;font-weight:600;}
   .ghost:hover{color:var(--ink-soft);border-color:var(--line-2);}
 
-  .gates{display:flex;gap:10px;overflow-x:auto;padding:2px;}
-  .gate{flex:1;min-width:128px;background:var(--panel-2);border:1px solid var(--line);border-radius:var(--r-md);padding:13px 14px;position:relative;}
-  .gate .gname{font-size:11.5px;font-weight:600;font-family:var(--font);margin:0 0 3px;color:var(--ink);}
-  .gate .gcount{font-size:10.5px;color:var(--ink-soft);margin:0;font-weight:500;}
-  .gate .gbar{height:5px;border-radius:3px;background:#e5e0d8;margin-top:9px;overflow:hidden;}
-  .gate .gbar i{display:block;height:100%;border-radius:3px;background:var(--ink-dim);}
-  .gate.done .gbar i{background:var(--done);}
-  .gate.active .gbar i{background:var(--orange);}
-  .gate.done .gcount{color:var(--done);}
-  .gate.active .gcount{color:var(--orange);}
+  /* ---- Timeline (main dashboard element) ---- */
+  .timeline{background:var(--panel);border-radius:var(--r-lg);padding:22px 24px 18px;box-shadow:var(--shadow-sm);}
+  .tl-head{display:flex;align-items:flex-end;justify-content:space-between;gap:16px;flex-wrap:wrap;margin-bottom:20px;}
+  .tl-eyebrow{font-size:10px;font-weight:700;letter-spacing:1.8px;text-transform:uppercase;color:var(--ink-dim);margin:0;}
+  .tl-title{font-family:var(--font);font-size:26px;font-weight:700;letter-spacing:-0.4px;margin:2px 0 0;color:var(--ink);}
+  .tl-legend{display:flex;align-items:center;gap:14px;font-size:10.5px;color:var(--ink-soft);}
+  .tl-legend span{display:flex;align-items:center;gap:5px;}
+  .tl-key{width:16px;height:7px;border-radius:99px;flex:none;}
+
+  .tl-scroll{overflow-x:auto;padding-bottom:4px;}
+  .tl-inner{min-width:720px;position:relative;}
+  .tl-chart{position:relative;}
+  .tl-gridline{position:absolute;top:0;bottom:0;width:0;border-left:1px dashed var(--line-2);}
+  .tl-today{position:absolute;top:0;bottom:0;width:0;border-left:2px solid var(--orange);z-index:3;}
+  .tl-today b{position:absolute;top:-7px;left:6px;font-size:9px;font-weight:700;letter-spacing:0.8px;
+    text-transform:uppercase;color:var(--orange);background:var(--panel);padding:0 4px;white-space:nowrap;}
+
+  .tl-row{position:relative;height:46px;}
+  .tl-bar{position:absolute;top:5px;height:36px;min-width:132px;border-radius:99px;background:var(--sidebar);
+    display:flex;align-items:center;padding:0 16px;overflow:hidden;cursor:pointer;z-index:2;
+    box-shadow:0 6px 16px -10px rgba(43,49,56,.7);transition:transform .15s ease;}
+  .tl-bar:hover{transform:translateY(-1px);}
+  .tl-bar.sel{outline:2px solid var(--orange);outline-offset:2px;}
+  .tl-fill{position:absolute;left:0;top:0;bottom:0;background:linear-gradient(90deg,var(--teal),var(--teal-2));}
+  .tl-bar.done .tl-fill{background:linear-gradient(90deg,#3f8a6d,var(--done));}
+  .tl-bar .tl-label{position:relative;z-index:1;font-family:var(--font);font-size:12.5px;font-weight:600;color:#fff;
+    white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .tl-bar .tl-count{position:relative;z-index:1;margin-left:auto;padding-left:12px;font-size:10.5px;
+    font-weight:600;color:rgba(255,255,255,.72);white-space:nowrap;}
+
+  .tl-axis{position:relative;height:20px;margin-top:6px;border-top:1px solid var(--line);}
+  .tl-tick{position:absolute;top:5px;font-size:9.5px;color:var(--ink-dim);white-space:nowrap;transform:translateX(-50%);}
+
+  .tl-details{display:grid;grid-template-columns:repeat(auto-fit,minmax(158px,1fr));gap:14px;
+    margin-top:18px;padding-top:16px;border-top:1px solid var(--line);}
+  .tl-col h4{font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--ink-dim);margin:0 0 8px;}
+  .tl-item{display:flex;gap:7px;font-size:11px;line-height:1.45;margin-bottom:5px;color:var(--ink-soft);}
+  .tl-item i{width:5px;height:5px;border-radius:50%;background:var(--ink-dim);flex:none;margin-top:5px;}
+  .tl-item.is-done i{background:var(--done);}
+  .tl-item.is-now i{background:var(--orange);}
+  .tl-item b{font-weight:600;color:var(--ink);}
+  .tl-item em{font-style:normal;font-weight:700;color:var(--ink-dim);}
 
   .board{display:flex;gap:16px;align-items:flex-start;flex-wrap:wrap;}
   .lane{flex:1 1 320px;min-width:290px;background:var(--panel-2);border:1px solid var(--line);border-radius:var(--r-lg);display:flex;flex-direction:column;overflow:hidden;}
@@ -388,7 +420,7 @@
 
       <div><h3 class="section-title" id="boardHeading">Milestone board</h3></div>
 
-      <section class="gates" id="gateStrip"></section>
+      <section class="timeline" id="timeline"></section>
 
       <section class="board" id="board"></section>
 
@@ -948,30 +980,128 @@
   }
 
   /* ---------------- Gate strip ---------------- */
-  function renderGateStrip(){
-    var strip=document.getElementById("gateStrip"); strip.innerHTML="";
+  /* ---------------- Timeline (main dashboard element) ----------------
+     A Gantt across the six phases. Each bar is positioned by real dates and
+     filled by how much of that phase the visible teams have cleared. */
+  function renderTimeline(){
+    var host=document.getElementById("timeline"); if(!host) return;
+    host.innerHTML="";
     var teams=visibleTeams();
-    PHASES.forEach(function(ph){
-      var ms=MILESTONES.filter(function(m){return m.phase===ph.id;});
-      if (!ms.length) return;
-      var totalInstances=ms.length*teams.length, doneInstances=0, activeInstances=0;
+    var span=PROJECT_END-PROJECT_START || 1;
+    function pos(ts){ return ((ts-PROJECT_START)/span)*100; }
+
+    // phase spans + progress
+    var rows=PHASES.map(function(ph){
+      var ms=MILESTONES.filter(function(m){ return m.phase===ph.id; });
+      if (!ms.length) return null;
+      var s0=Math.min.apply(null, ms.map(function(m){ return m.start; }));
+      var e0=Math.max.apply(null, ms.map(function(m){ return m.end; }));
+      var total=ms.length*teams.length, done=0, active=0;
       teams.forEach(function(tk){
         ms.forEach(function(m){
-          var s=state.teams[tk].status[m.id];
-          if (s==="done") doneInstances++;
-          else if (s==="in-progress"||s==="in-review") activeInstances++;
+          var st=state.teams[tk].status[m.id];
+          if (st==="done") done++; else if (st==="in-progress"||st==="in-review") active++;
         });
       });
-      var cls="gate";
-      if (doneInstances===totalInstances) cls+=" done"; else if (activeInstances>0||doneInstances>0) cls+=" active";
-      var pct=Math.round(doneInstances/totalInstances*100);
-      var div=document.createElement("div"); div.className=cls;
-      div.innerHTML='<p class="gname">'+escapeHtml(ph.name)+'</p><p class="gcount">'+doneInstances+'/'+totalInstances+' cleared</p><div class="gbar"><i style="width:'+pct+'%"></i></div>';
-      strip.appendChild(div);
+      return { ph:ph, ms:ms, start:s0, end:e0, done:done, active:active, total:total,
+               pct: total?Math.round(done/total*100):0 };
+    }).filter(Boolean);
+
+    // ---- header ----
+    var head=document.createElement("div"); head.className="tl-head";
+    head.innerHTML='<div><p class="tl-eyebrow">Journey highlights</p><h2 class="tl-title">Timeline</h2></div>'+
+      '<div class="tl-legend">'+
+        '<span><i class="tl-key" style="background:linear-gradient(90deg,var(--teal),var(--teal-2))"></i>Cleared</span>'+
+        '<span><i class="tl-key" style="background:var(--sidebar)"></i>Remaining</span>'+
+        '<span><i class="tl-key" style="background:var(--orange)"></i>Today</span>'+
+      '</div>';
+    host.appendChild(head);
+
+    var scroll=document.createElement("div"); scroll.className="tl-scroll";
+    var inner=document.createElement("div"); inner.className="tl-inner";
+    scroll.appendChild(inner); host.appendChild(scroll);
+
+    var chart=document.createElement("div"); chart.className="tl-chart";
+    chart.style.height=(rows.length*46)+"px";
+    inner.appendChild(chart);
+
+    // dashed gridline at each phase start
+    rows.forEach(function(r){
+      var g=document.createElement("div"); g.className="tl-gridline";
+      g.style.left=pos(r.start)+"%"; chart.appendChild(g);
     });
+
+    // bars
+    rows.forEach(function(r,i){
+      var row=document.createElement("div"); row.className="tl-row"; row.style.height="46px";
+      var bar=document.createElement("div");
+      bar.className="tl-bar"+(r.pct===100?" done":"")+(ui.phase===r.ph.id?" sel":"");
+      var left=pos(r.start), width=Math.max(pos(r.end)-left, 0);
+      if (left > 70){
+        // near the right edge: anchor to the end date so the pill grows leftwards
+        // instead of overflowing the chart when min-width kicks in
+        bar.style.right=(100-pos(r.end))+"%"; bar.style.width=width+"%";
+      } else {
+        bar.style.left=left+"%"; bar.style.width=width+"%";
+      }
+      bar.title=r.ph.name+" · "+fmtDate(r.start)+" – "+fmtDate(r.end);
+      bar.innerHTML='<span class="tl-fill" style="width:'+r.pct+'%"></span>'+
+                    '<span class="tl-label">'+escapeHtml(r.ph.name)+'</span>'+
+                    '<span class="tl-count">'+r.done+'/'+r.total+'</span>';
+      bar.addEventListener("click",function(){
+        ui.phase = (ui.phase===r.ph.id) ? "all" : r.ph.id;   // click to filter, click again to clear
+        render();
+      });
+      row.appendChild(bar);
+      chart.appendChild(row);
+      row.style.position="absolute"; row.style.left="0"; row.style.right="0"; row.style.top=(i*46)+"px";
+    });
+
+    // today marker
+    var now=Date.now();
+    if (now>=PROJECT_START && now<=PROJECT_END){
+      var t=document.createElement("div"); t.className="tl-today";
+      t.style.left=pos(now)+"%"; t.innerHTML="<b>Today</b>";
+      chart.appendChild(t);
+    }
+
+    // ---- date axis: one tick per phase start, plus the final date ----
+    var axis=document.createElement("div"); axis.className="tl-axis";
+    var seen={}, lastAt=-99;
+    rows.forEach(function(r){
+      var k=fmtDate(r.start), at=pos(r.start);
+      if (seen[k] || at-lastAt < 7 || at > 88) return;   // skip ticks that would collide
+      seen[k]=1; lastAt=at;
+      var tick=document.createElement("span"); tick.className="tl-tick";
+      tick.style.left=at+"%"; tick.textContent=k;
+      axis.appendChild(tick);
+    });
+    var endTick=document.createElement("span"); endTick.className="tl-tick";
+    endTick.style.left="100%"; endTick.style.transform="translateX(-100%)";
+    endTick.textContent=fmtDate(PROJECT_END);
+    axis.appendChild(endTick);
+    inner.appendChild(axis);
+
+    // ---- deliverables under each phase ----
+    var details=document.createElement("div"); details.className="tl-details";
+    rows.forEach(function(r){
+      var col=document.createElement("div"); col.className="tl-col";
+      var h=document.createElement("h4"); h.textContent=r.ph.name; col.appendChild(h);
+      r.ms.slice().sort(function(a,b){ return a.start-b.start; }).forEach(function(m){
+        var allDone = teams.every(function(tk){ return state.teams[tk].status[m.id]==="done"; });
+        var anyNow  = teams.some(function(tk){
+          var st=state.teams[tk].status[m.id]; return st==="in-progress"||st==="in-review";
+        });
+        var it=document.createElement("div");
+        it.className="tl-item"+(allDone?" is-done":(anyNow?" is-now":""));
+        it.innerHTML='<i></i><span><b>'+escapeHtml(m.title)+'</b><br><em>'+escapeHtml(fmtRange(m))+'</em></span>';
+        col.appendChild(it);
+      });
+      details.appendChild(col);
+    });
+    host.appendChild(details);
   }
 
-  /* ---------------- Lock screen ---------------- */
   function renderLockScreen(container, tk){
     var wrap=document.createElement("div"); wrap.className="lock-screen";
     wrap.innerHTML =
@@ -1805,7 +1935,7 @@
     renderRoleControls();
     renderHero();
     renderNextDeadline();
-    renderGateStrip();
+    renderTimeline();
     renderPhaseSeg();
     renderBoard();
     renderActivity();
@@ -1835,8 +1965,8 @@
      deliberately from the Firebase console if one is ever genuinely needed. */
   document.getElementById("attPdfBtn").addEventListener("click", downloadAttendancePdf);
   document.getElementById("rpPdfBtn").addEventListener("click", downloadReportsPdf);
-  document.getElementById("rateGo").addEventListener("click",function(){ document.getElementById("gateStrip").scrollIntoView({behavior:"smooth"}); });
-  document.getElementById("heroCta").addEventListener("click",function(){ document.getElementById("gateStrip").scrollIntoView({behavior:"smooth"}); });
+  document.getElementById("rateGo").addEventListener("click",function(){ document.getElementById("timeline").scrollIntoView({behavior:"smooth"}); });
+  document.getElementById("heroCta").addEventListener("click",function(){ document.getElementById("timeline").scrollIntoView({behavior:"smooth"}); });
 
   var syncFoot=document.getElementById("syncFoot");
   syncFoot.textContent = (FIREBASE_READY ? "🔄 Synced live across devices" : "💾 Saved locally in this browser only") + " · set a per-team PIN to keep boards private on shared devices";
