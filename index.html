@@ -252,6 +252,8 @@
   .att-table th{font-family:var(--font);font-weight:600;color:var(--ink-soft);font-size:10.5px;text-transform:uppercase;letter-spacing:.4px;}
   .att-session{display:block;font-weight:600;color:var(--ink);}
   .att-date{display:block;font-size:10.5px;color:var(--ink-dim);font-weight:700;}
+  .att-working{background:rgba(0,0,0,0.012);}
+  .att-session.plain{font-weight:500;color:var(--ink-soft);}
 
   /* ---- Job bag ---- */
   .jb-panel{background:var(--card);border-radius:var(--r-lg);padding:18px 20px;}
@@ -557,6 +559,43 @@
       checklist:["All job bags up to date","Final presentation ready","Report compiled and proofed","Presentation uploaded to Moodle","Final check-in with lecturers"] }
   ];
 
+  /* ---------------- Attendance sessions ----------------
+     The class meets Tue / Thu / Sat from the kickoff right up to campus immersion.
+     Some of those days are milestones (already listed above); the rest are working
+     sessions with no deliverable attached. The register needs all of them, so this
+     merges the two into one chronological list.
+     IDs are date-based strings rather than timestamps so every device agrees on them
+     regardless of timezone. */
+  var SESSION_WEEKDAYS = [2,4,6];                 // Tue, Thu, Sat
+  var SESSION_START = D(2026,7,21);               // kickoff
+  var SESSION_LAST  = D(2026,9,15);               // last regular day before immersion begins
+  function dayKey(d){
+    var m=d.getMonth()+1, day=d.getDate();
+    return d.getFullYear()+"-"+(m<10?"0":"")+m+"-"+(day<10?"0":"")+day;
+  }
+  function buildSessions(){
+    var out=[], taken={};
+    MILESTONES.forEach(function(m){
+      out.push({ id:m.id, title:m.title, start:m.start, end:m.end, time:m.time, milestone:true });
+      if (m.start===m.end) taken[dayKey(new Date(m.start))] = true;
+    });
+    var d = new Date(SESSION_START);
+    while (d.getTime() <= SESSION_LAST){
+      if (SESSION_WEEKDAYS.indexOf(d.getDay()) !== -1){
+        var k = dayKey(d);
+        if (!taken[k]){
+          var ts = D(d.getFullYear(), d.getMonth()+1, d.getDate());
+          out.push({ id:"s"+k, title:"Working session", start:ts, end:ts, time:null, milestone:false });
+        }
+      }
+      d.setDate(d.getDate()+1);
+    }
+    // chronological; where a milestone and a session share a day, the milestone leads
+    out.sort(function(a,b){ return (a.start-b.start) || (a.milestone===b.milestone?0:(a.milestone?-1:1)); });
+    return out;
+  }
+  var SESSIONS = buildSessions();
+
   var ROLES = [
     { key:"am", label:"Account Manager", desc:"Liaison between agency and client. Runs sales/marketing plans, project management and relationship service." },
     { key:"ap", label:"Account Planner", desc:"Specialises in consumer thought & behaviour. Drives the overall strategic direction of the creative campaign." },
@@ -600,7 +639,7 @@
       checklist[m.id] = m.checklist.map(function(){ return false; });
     });
     var attendance = {};
-    MILESTONES.forEach(function(m){ attendance[m.id] = ["","","","","",""]; });
+    SESSIONS.forEach(function(sn){ attendance[sn.id] = ["","","","","",""]; });
     var names = TEAM_ROSTER_NAMES[teamKey] || [];
     return {
       name:null, // set below per team
@@ -644,7 +683,9 @@
     MILESTONES.forEach(function(m){
       if (!t.status[m.id]) t.status[m.id] = "not-started";
       if (!t.checklist[m.id]) t.checklist[m.id] = m.checklist.map(function(){ return false; });
-      if (!t.attendance[m.id]) t.attendance[m.id] = ["","","","","",""];
+    });
+    SESSIONS.forEach(function(sn){
+      if (!t.attendance[sn.id]) t.attendance[sn.id] = ["","","","","",""];
     });
     return t;
   }
@@ -1439,7 +1480,7 @@
     })();
 
     /* --- Attendance (sessions that have already happened) --- */
-    var past = MILESTONES.filter(function(m){ return m.start<=now; });
+    var past = SESSIONS.filter(function(m){ return m.start<=now; });
     var per = team.roster.map(function(s){ return {name:s.name||s.role, present:0, late:0, absent:0, blank:0}; });
     past.forEach(function(m){
       var row = team.attendance[m.id]||[];
@@ -1593,7 +1634,7 @@
      libraries, so nothing to break if a CDN is unreachable. */
   function attendanceExportHtml(){
     var generated = new Date().toLocaleString(undefined,{dateStyle:"long",timeStyle:"short"});
-    var sorted = MILESTONES.slice().sort(function(a,b){ return a.start-b.start; });
+    var sorted = SESSIONS.slice();
     var css = "@page{size:A4 landscape;margin:14mm}"
       + "body{font-family:Arial,Helvetica,sans-serif;color:#1c1c1c;margin:0}"
       + "h1{font-size:17px;margin:0 0 2px}h2{font-size:14px;margin:0 0 8px;}"
@@ -1707,11 +1748,13 @@
     thead.appendChild(headRow); table.appendChild(thead);
 
     var tbody=document.createElement("tbody");
-    var sorted=MILESTONES.slice().sort(function(a,b){ return a.start-b.start; });
+    var sorted=SESSIONS.slice();
     sorted.forEach(function(m){
       var tr=document.createElement("tr");
       var tdS=document.createElement("td");
-      tdS.innerHTML="<span class='att-session'>"+escapeHtml(m.title)+"</span><span class='att-date'>"+escapeHtml(fmtRange(m))+"</span>";
+      if (!m.milestone) tr.className="att-working";
+      tdS.innerHTML="<span class='att-session"+(m.milestone?"":" plain")+"'>"+escapeHtml(m.title)+"</span>"+
+                    "<span class='att-date'>"+escapeHtml(fmtRange(m))+"</span>";
       tr.appendChild(tdS);
       team.roster.forEach(function(slot, idx){
         var td=document.createElement("td"); td.className="att-cell";
