@@ -338,14 +338,6 @@
   .ci-row select{flex:1;min-width:150px;font-family:var(--font-body);font-size:12px;padding:9px 11px;
     border:1px solid var(--line);border-radius:10px;background:#fff;color:var(--ink);}
 
-  .ci-moods{display:flex;gap:8px;margin:4px 0 18px;}
-  .ci-mood{flex:1;border:1px solid var(--line);background:var(--panel-2);border-radius:14px;padding:10px 4px;
-    display:flex;flex-direction:column;align-items:center;gap:4px;cursor:pointer;transition:all .13s ease;}
-  .ci-mood span{font-size:20px;line-height:1;}
-  .ci-mood i{font-style:normal;font-size:9px;font-weight:600;color:var(--ink-dim);}
-  .ci-mood:hover{border-color:var(--teal-2);transform:translateY(-2px);}
-  .ci-mood.on{background:linear-gradient(135deg,var(--teal),var(--teal-2));border-color:transparent;}
-  .ci-mood.on i{color:rgba(255,255,255,.85);}
 
   .ci-sig{margin-bottom:15px;}
   .ci-sig-head{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:6px;}
@@ -358,6 +350,11 @@
   .ci-dot.on{background:var(--teal);border-color:var(--teal);color:#fff;}
   .ci-dot.on.warn{background:var(--absent);border-color:var(--absent);}
   .ci-ends{display:flex;justify-content:space-between;font-size:9.5px;color:var(--ink-dim);margin-top:4px;}
+
+  .ci-dot-10{font-size:10px;min-width:0;padding:0;}
+  .ci-consent{display:flex;gap:9px;align-items:flex-start;margin:0 0 14px;padding:11px 13px;
+    background:var(--panel-2);border-radius:12px;font-size:10.5px;color:var(--ink-soft);line-height:1.45;cursor:pointer;}
+  .ci-consent input{margin-top:2px;flex:none;}
 
   .ci-note{width:100%;font-family:var(--font-body);font-size:12px;padding:10px 12px;border:1px solid var(--line);
     border-radius:12px;background:#fff;color:var(--ink);resize:vertical;min-height:64px;}
@@ -697,21 +694,16 @@
       checklist:["All job bags up to date","Final presentation ready","Report compiled and proofed","Presentation uploaded to Moodle","Final check-in with lecturers"] }
   ];
 
-  /* ---------------- Wellbeing check-in ----------------
-     Four scored signals plus a mood tap. `invert` marks scales where a HIGH
-     number is the bad direction, so averages can be coloured correctly. */
-  var MOODS = [
-    { v:1, face:"\u2639\ufe0f", label:"Rough" },
-    { v:2, face:"\ud83d\ude41", label:"Low" },
-    { v:3, face:"\ud83d\ude10", label:"OK" },
-    { v:4, face:"\ud83d\ude42", label:"Good" },
-    { v:5, face:"\ud83d\ude04", label:"Great" }
-  ];
+  /* ---------------- Session check-in ----------------
+     Deliberately scoped to the Crossover Challenge itself, not to the person.
+     Every question is about the session, the workload or the team — nothing
+     personal, nothing diagnostic. Anyone who needs more than a course
+     conversation is pointed at the allocated counsellor. */
+  var RATING_MAX = 10;
   var SIGNALS = [
-    { key:"workload",   label:"Workload pressure", low:"Very light", high:"Overwhelming", invert:true  },
-    { key:"confidence", label:"Confidence in the work", low:"Lost", high:"Very confident", invert:false },
-    { key:"teamwork",   label:"Team working together", low:"Struggling", high:"Working well", invert:false },
-    { key:"sleep",      label:"Sleep this week", low:"Poor", high:"Good", invert:false }
+    { key:"workload",   label:"Workload this week",       low:"Light",      high:"Heavy",         invert:true  },
+    { key:"confidence", label:"Confidence in the work",   low:"Unsure",     high:"Confident",     invert:false },
+    { key:"teamwork",   label:"How the team worked",      low:"Struggling", high:"Working well",  invert:false }
   ];
   var CHECKIN_ME_KEY = "cx02ControlCheckinMe.v1";   // remembers who you are on this device
 
@@ -1688,10 +1680,10 @@
     });
   }
 
-  /* ---------------- Wellbeing check-in ----------------
-     Stored per team, per session, per roster index. Lecturers can see individual
-     answers, and students are told so on the form — an honest system beats a
-     covert one, and people answer more usefully when they know the rules. */
+  /* ---------------- Session check-in ----------------
+     Scoped to the Crossover Challenge, not to the person. One headline
+     question — how was the session — plus three process signals. Stored per
+     team, per session, per roster index. */
 
   function sessionsSoFar(){
     var now=Date.now();
@@ -1709,12 +1701,15 @@
     if (!vals.length) return null;
     return vals.reduce(function(a,b){ return a+b; },0)/vals.length;
   }
-  // colour a mean: high is good unless the signal is inverted
   function ciTone(val, invert){
     if (val===null) return "";
     var good = invert ? val<=2.4 : val>=3.6;
     var bad  = invert ? val>=3.6 : val<=2.4;
     return good?"good":(bad?"warn":"");
+  }
+  function ciRatingTone(v){
+    if (v===null) return "";
+    return v>=7 ? "good" : (v<=4 ? "warn" : "");
   }
 
   function renderCheckin(){
@@ -1742,8 +1737,8 @@
 
     var team=state.teams[tk];
     heading.innerHTML = isAdmin
-      ? escapeHtml(team.name)+" check-ins"
-      : "Check-in <span class='lock-hint'>How are you doing?</span>";
+      ? escapeHtml(team.name)+" session feedback"
+      : "Session check-in";
 
     panel.innerHTML="";
     if (isLocked(tk)){
@@ -1770,7 +1765,7 @@
     var card=document.createElement("div"); card.className="ci-card";
     var editable=canManageTeam(tk);
 
-    var savedMe = null;
+    var savedMe=null;
     try{ savedMe = localStorage.getItem(CHECKIN_ME_KEY); }catch(e){}
     if (ui.ciWho===null || ui.ciWho===undefined){
       var found = team.roster.findIndex(function(r){ return r.name && r.name===savedMe; });
@@ -1778,9 +1773,8 @@
     }
     if (!ui.ciSession) ui.ciSession = past[0].id;
 
-    card.innerHTML='<p class="ci-q">How are you doing?</p>'+
-      '<p class="ci-sub">Takes about fifteen seconds. Answer for how the session and the week actually felt.</p>'+
-      '<p class="ci-notice"><b>Who sees this:</b> your lecturers can see your individual answers, including your name and any note you write. Your teammates cannot. Please answer honestly — it is used to spot where the course is putting people under strain, not to judge you.</p>';
+    card.innerHTML='<p class="ci-q">How did you find the session?</p>'+
+      '<p class="ci-sub">About fifteen seconds. These questions are about the Crossover Challenge — the session, the workload and the team — not about you personally.</p>';
 
     // who + which session
     var rowWho=document.createElement("div"); rowWho.className="ci-row";
@@ -1794,7 +1788,7 @@
     selWho.onchange=function(){
       ui.ciWho=+selWho.value;
       try{ localStorage.setItem(CHECKIN_ME_KEY, team.roster[ui.ciWho].name||""); }catch(e){}
-      renderCheckin();
+      ui.ciDraft=null; renderCheckin();
     };
     rowWho.appendChild(selWho); card.appendChild(rowWho);
 
@@ -1807,42 +1801,51 @@
       if (sn.id===ui.ciSession) o.selected=true;
       selSes.appendChild(o);
     });
-    selSes.onchange=function(){ ui.ciSession=selSes.value; renderCheckin(); };
+    selSes.onchange=function(){ ui.ciSession=selSes.value; ui.ciDraft=null; renderCheckin(); };
     rowSes.appendChild(selSes); card.appendChild(rowSes);
 
     var existing = ciEntry(tk, ui.ciSession, ui.ciWho);
     var draft = ui.ciDraft && ui.ciDraft.k===(tk+ui.ciSession+ui.ciWho)
       ? ui.ciDraft
       : { k:(tk+ui.ciSession+ui.ciWho),
-          mood: existing?existing.mood:null,
+          rating: existing?existing.rating:null,
           workload: existing?existing.workload:null,
           confidence: existing?existing.confidence:null,
           teamwork: existing?existing.teamwork:null,
-          sleep: existing?existing.sleep:null,
           note: existing?(existing.note||""):"",
-          help: existing?!!existing.help:false };
+          support: existing?!!existing.support:false,
+          consent: existing?!!existing.consent:false };
     ui.ciDraft = draft;
 
-    // mood
-    var moods=document.createElement("div"); moods.className="ci-moods";
-    MOODS.forEach(function(m){
-      var b=document.createElement("button");
-      b.className="ci-mood"+(draft.mood===m.v?" on":"");
-      b.innerHTML='<span>'+m.face+'</span><i>'+m.label+'</i>';
-      b.disabled=!editable;
-      b.onclick=function(){ draft.mood=m.v; renderCheckin(); };
-      moods.appendChild(b);
-    });
-    card.appendChild(moods);
+    // headline: 1-10 session rating
+    var rateBox=document.createElement("div"); rateBox.className="ci-sig";
+    var rHead=document.createElement("div"); rHead.className="ci-sig-head";
+    rHead.innerHTML='<b>Overall, how was this session?</b><em>'+(draft.rating?draft.rating+"/10":"—")+'</em>';
+    rateBox.appendChild(rHead);
+    var rScale=document.createElement("div"); rScale.className="ci-scale";
+    for (var n=1;n<=RATING_MAX;n++){
+      (function(v){
+        var d=document.createElement("button");
+        d.className="ci-dot ci-dot-10"+(draft.rating===v?" on"+(v<=4?" warn":""):"");
+        d.textContent=v; d.disabled=!editable;
+        d.onclick=function(){ draft.rating=v; renderCheckin(); };
+        rScale.appendChild(d);
+      })(n);
+    }
+    rateBox.appendChild(rScale);
+    var rEnds=document.createElement("div"); rEnds.className="ci-ends";
+    rEnds.innerHTML='<span>Didn’t work for me</span><span>Really valuable</span>';
+    rateBox.appendChild(rEnds);
+    card.appendChild(rateBox);
 
-    // the four scored signals
+    // three process signals
     SIGNALS.forEach(function(sig){
       var box=document.createElement("div"); box.className="ci-sig";
       var head=document.createElement("div"); head.className="ci-sig-head";
       head.innerHTML='<b>'+escapeHtml(sig.label)+'</b><em>'+(draft[sig.key]?draft[sig.key]+"/5":"—")+'</em>';
       box.appendChild(head);
       var scale=document.createElement("div"); scale.className="ci-scale";
-      for (var n=1;n<=5;n++){
+      for (var n2=1;n2<=5;n2++){
         (function(v){
           var d=document.createElement("button");
           var isWarn = sig.invert ? v>=4 : v<=2;
@@ -1850,7 +1853,7 @@
           d.textContent=v; d.disabled=!editable;
           d.onclick=function(){ draft[sig.key]=v; renderCheckin(); };
           scale.appendChild(d);
-        })(n);
+        })(n2);
       }
       box.appendChild(scale);
       var ends=document.createElement("div"); ends.className="ci-ends";
@@ -1859,20 +1862,29 @@
       card.appendChild(box);
     });
 
-    // note
     var note=document.createElement("textarea"); note.className="ci-note";
-    note.placeholder="Anything you'd like your lecturers to know? (optional)";
+    note.placeholder="Anything about the session or the process worth flagging? (optional)";
     note.value=draft.note; note.disabled=!editable;
     note.oninput=function(){ draft.note=note.value; };
     card.appendChild(note);
 
-    // explicit ask for support
+    // route to the allocated counsellor — student-initiated, not inferred from scores
     var help=document.createElement("label"); help.className="ci-help";
-    var hcb=document.createElement("input"); hcb.type="checkbox"; hcb.checked=draft.help; hcb.disabled=!editable;
-    hcb.onchange=function(){ draft.help=hcb.checked; };
+    var hcb=document.createElement("input"); hcb.type="checkbox"; hcb.checked=draft.support; hcb.disabled=!editable;
+    hcb.onchange=function(){ draft.support=hcb.checked; };
     help.appendChild(hcb);
-    help.appendChild(document.createTextNode("I'd like a lecturer to check in with me."));
+    help.appendChild(document.createTextNode(
+      "I'd like someone to get in touch — either a lecturer about the course, or the counsellor allocated to the challenge."));
     card.appendChild(help);
+
+    // explicit, separable consent for the secondary use
+    var cons=document.createElement("label"); cons.className="ci-consent";
+    var ccb=document.createElement("input"); ccb.type="checkbox"; ccb.checked=draft.consent; ccb.disabled=!editable;
+    ccb.onchange=function(){ draft.consent=ccb.checked; };
+    cons.appendChild(ccb);
+    cons.appendChild(document.createTextNode(
+      "I'm happy for my anonymised answers to be used in the Crossover Challenge case study. You can leave this unticked and still check in — your feedback will just stay with the course team."));
+    card.appendChild(cons);
 
     if (editable){
       var btn=document.createElement("button"); btn.className="ci-submit";
@@ -1880,12 +1892,12 @@
       btn.onclick=function(){
         var w=team.wellbeing; if(!w[ui.ciSession]) w[ui.ciSession]={};
         w[ui.ciSession][ui.ciWho]={
-          mood:draft.mood, workload:draft.workload, confidence:draft.confidence,
-          teamwork:draft.teamwork, sleep:draft.sleep,
-          note:(draft.note||"").slice(0,600), help:!!draft.help, ts:Date.now()
+          rating:draft.rating, workload:draft.workload,
+          confidence:draft.confidence, teamwork:draft.teamwork,
+          note:(draft.note||"").slice(0,600),
+          support:!!draft.support, consent:!!draft.consent, ts:Date.now()
         };
-        // the log records that a check-in happened, never what was said
-        logActivity(tk, "A check-in was submitted");
+        logActivity(tk, "A session check-in was submitted");   // never the content
         ui.ciDraft=null; ui.ciSaved=true;
         saveState(); render();
       };
@@ -1897,13 +1909,12 @@
     }
 
     var sup=document.createElement("p"); sup.className="ci-support";
-    sup.innerHTML="This is a course check-in, not a health service. If you're struggling and want to talk to someone outside the course, "+
-      "SADAG runs a free counselling line on <b>0800 567 567</b> (24 hours), or SMS <b>31393</b> and they'll call you back.";
+    sup.innerHTML="This is a course check-in about the Crossover Challenge. If something bigger is going on, there's a counsellor allocated to the challenge — tick the box above and someone will reach out.";
     card.appendChild(sup);
     return card;
   }
 
-  /* ----- the read side: averages, trend against deadlines, individuals ----- */
+  /* ----- the read side ----- */
   function buildCheckinSummary(tk, past, isAdmin){
     var team=state.teams[tk];
     var card=document.createElement("div"); card.className="ci-card";
@@ -1913,8 +1924,11 @@
     card.innerHTML='<p class="ci-q">'+(isAdmin?escapeHtml(team.name):"Your team")+'</p>'+
       '<p class="ci-sub">'+(sess?escapeHtml(fmtRange(sess)+" · "+sess.title):"")+'</p>';
 
-    // averages for the selected session
     var avgs=document.createElement("div"); avgs.className="ci-avgs";
+    var rAvg=ciAvg(tk, sid, "rating");
+    var rBox=document.createElement("div"); rBox.className="ci-avg "+ciRatingTone(rAvg);
+    rBox.innerHTML='<p>Session rating</p><b>'+(rAvg===null?"—":rAvg.toFixed(1))+'<small>/10</small></b>';
+    avgs.appendChild(rBox);
     SIGNALS.forEach(function(sig){
       var v=ciAvg(tk, sid, sig.key);
       var box=document.createElement("div"); box.className="ci-avg "+ciTone(v, sig.invert);
@@ -1928,23 +1942,24 @@
     partP.textContent=responded+" of "+team.roster.length+" checked in for this session.";
     card.appendChild(partP);
 
-    // ---- workload against the calendar: does pressure spike at marked reviews? ----
-    var series=past.slice().reverse();                       // oldest first
-    var pts=series.map(function(sn){ return { sn:sn, v:ciAvg(tk, sn.id, "workload") }; });
+    // session rating across the term, with assessed deadlines marked
+    var series=past.slice().reverse();
+    var pts=series.map(function(sn){ return { sn:sn, v:ciAvg(tk, sn.id, "rating") }; });
     if (pts.filter(function(p){ return p.v!==null; }).length >= 2){
       var w=360, h=64, pad=6;
       var step = pts.length>1 ? (w-pad*2)/(pts.length-1) : 0;
       var line="", dots="";
       pts.forEach(function(p,i){
         if (p.v===null) return;
-        var x=pad+i*step, y=h-pad-((p.v-1)/4)*(h-pad*2);
+        var x=pad+i*step, y=h-pad-((p.v-1)/9)*(h-pad*2);
         line += (line?" L":"M")+x.toFixed(1)+" "+y.toFixed(1);
         var marked = p.sn.milestone && /marked/i.test(p.sn.time||"");
         dots += '<circle cx="'+x.toFixed(1)+'" cy="'+y.toFixed(1)+'" r="'+(marked?4:2.6)+'" fill="'+
-                (marked?"var(--orange)":"var(--teal)")+'"><title>'+escapeHtml(fmtDate(p.sn.start)+" · "+p.sn.title+" · "+p.v.toFixed(1)+"/5")+'</title></circle>';
+                (marked?"var(--orange)":"var(--teal)")+'"><title>'+
+                escapeHtml(fmtDate(p.sn.start)+" · "+p.sn.title+" · "+p.v.toFixed(1)+"/10")+'</title></circle>';
       });
       var spark=document.createElement("div"); spark.className="ci-spark";
-      spark.innerHTML='<p class="ci-sub" style="margin-bottom:4px"><b>Workload pressure over time</b> — orange marks an assessed deadline</p>'+
+      spark.innerHTML='<p class="ci-sub" style="margin-bottom:4px"><b>Session rating over time</b> — orange marks an assessed deadline</p>'+
         '<svg viewBox="0 0 '+w+' '+h+'" width="100%" height="'+h+'" preserveAspectRatio="none">'+
         '<path d="'+line+'" fill="none" stroke="var(--teal)" stroke-width="2" stroke-linejoin="round"/>'+dots+'</svg>';
       card.appendChild(spark);
@@ -1957,20 +1972,19 @@
       return card;
     }
 
-    // ---- admin only: who asked for a check-in, then everyone's answers ----
     var flagged=team.roster.map(function(r,i){ return {r:r,i:i,e:ciEntry(tk,sid,i)}; })
-                           .filter(function(x){ return x.e && x.e.help; });
+                           .filter(function(x){ return x.e && x.e.support; });
     if (flagged.length){
       var fl=document.createElement("div"); fl.className="ci-flag";
-      fl.innerHTML="<b>Asked for a check-in:</b> "+flagged.map(function(x){
+      fl.innerHTML="<b>Asked for someone to get in touch:</b> "+flagged.map(function(x){
         return escapeHtml(x.r.name||x.r.role); }).join(", ");
       card.appendChild(fl);
     }
 
     var tbl=document.createElement("table"); tbl.className="ci-table";
-    tbl.innerHTML='<thead><tr><th>Student</th><th>Mood</th>'+
+    tbl.innerHTML='<thead><tr><th>Student</th><th>Session</th>'+
       SIGNALS.map(function(s2){ return '<th>'+escapeHtml(s2.label.split(" ")[0])+'</th>'; }).join("")+
-      '</tr></thead>';
+      '<th>Case study</th></tr></thead>';
     var tb=document.createElement("tbody");
     team.roster.forEach(function(r,i){
       var e=ciEntry(tk,sid,i);
@@ -1978,15 +1992,16 @@
       var cells='<td><b>'+escapeHtml(r.name||r.role)+'</b>'+
         (e&&e.note?'<span class="ci-noteline">“'+escapeHtml(e.note)+'”</span>':'')+'</td>';
       if (!e){
-        cells+='<td colspan="'+(SIGNALS.length+1)+'" class="ci-nomark">No check-in</td>';
+        cells+='<td colspan="'+(SIGNALS.length+2)+'" class="ci-nomark">No check-in</td>';
       } else {
-        var mood=MOODS.filter(function(m){ return m.v===e.mood; })[0];
-        cells+='<td>'+(mood?mood.face:"—")+'</td>';
+        cells+='<td><span class="ci-score '+ciRatingTone(e.rating)+'">'+
+               (typeof e.rating==="number"?e.rating:"—")+'</span></td>';
         SIGNALS.forEach(function(sg){
           var v=e[sg.key];
           cells+='<td><span class="ci-score '+(typeof v==="number"?ciTone(v,sg.invert):"")+'">'+
                  (typeof v==="number"?v:"—")+'</span></td>';
         });
+        cells+='<td class="ci-nomark">'+(e.consent?"Consented":"Course only")+'</td>';
       }
       tr.innerHTML=cells; tb.appendChild(tr);
     });
